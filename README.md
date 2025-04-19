@@ -1,2 +1,2 @@
 # CBC_Model
-Data and Software for CBC Model Projects
+Data and Tool for CBC Model Projects
