@@ -18,28 +18,12 @@ suppressPackageStartupMessages({
   library(showtext)  # For custom fonts
 })
 
-# Load Inter font
-font_add_google("Inter", "inter")
-showtext_auto()
-
-# Create output directory if it doesn't exist
-if (!dir.exists("plots")) {
-  dir.create("plots")
-}
-
-# Set global theme with Inter font
-theme_set(theme_bw(base_family = "inter"))
-
 # ==============================================================================
 # 1. DATA PREPARATION
 # ==============================================================================
 
 # Load and prepare dataset
-cat("Loading and preparing data...\n")
 df <- read.csv("covid_dataset.csv", header = TRUE)
-cat("Dataset dimensions:", dim(df), "\n")
-head(df)
-
 df <- df %>%
   select(country_label, infec, pos, vac)
 
@@ -51,7 +35,6 @@ rownames(df_cleaned) <- df[, 1]  # Preserve country names as row names
 # 2. PRINCIPAL COMPONENT ANALYSIS (PCA)
 # ==============================================================================
 
-cat("Performing PCA...\n")
 # Perform PCA on the standardized dataset
 pca_result <- prcomp(df_cleaned, center = FALSE, scale. = FALSE)
 summary(pca_result)
@@ -60,23 +43,6 @@ summary(pca_result)
 p1 <- fviz_eig(pca_result, addlabels = TRUE, ylim = c(0, 100), 
                fill = viridis(1)[1], color = viridis(1)[1],
                main = "Scree Plot: Variance Explained by PCs") +
-  theme_bw(base_family = "inter")
-
-# Plot PCA biplot showing individuals and variables
-p2 <- fviz_pca_biplot(pca_result, 
-                      col.ind = "cos2",
-                      gradient.cols = viridis(3, option = "plasma"),
-                      col.var = "contrib",
-                      repel = TRUE,
-                      title = "PCA Biplot: Variables and Individuals") +
-  theme_bw(base_family = "inter")
-
-# Plot individuals on PCA dimensions
-p3 <- fviz_pca_ind(pca_result,
-                   col.ind = "cos2",
-                   gradient.cols = viridis(3, option = "viridis"),
-                   repel = TRUE,
-                   title = "PCA: Individual Countries") +
   theme_bw(base_family = "inter")
 
 # Combine contribution plots for PC1 and PC2
@@ -107,8 +73,6 @@ p4 <- ggplot(combined_contrib, aes(x = reorder(name, contrib), y = contrib)) +
 # ==============================================================================
 # 3. OPTIMAL CLUSTER DETERMINATION
 # ==============================================================================
-
-cat("Determining optimal number of clusters...\n")
 
 # Extract PCA coordinates for clustering
 pca_coords <- pca_result$x[, 1:2]
@@ -156,9 +120,6 @@ p5 <- ggplot(combined_data, aes(x = clusters, y = Value)) +
 # ==============================================================================
 # 4. K-MEANS CLUSTERING
 # ==============================================================================
-
-cat("Performing k-means clustering...\n")
-
 # Perform k-means clustering with k = 3
 set.seed(123)  # For reproducibility
 library(ggplot2)
@@ -217,83 +178,6 @@ p6 <- fviz_cluster(km, data = df_cleaned,
     min.segment.length = 0
   )
 
-# Plot clustering results on PCA coordinates
-p7 <- fviz_cluster(km_pca, data = pca_coords,
-                   geom = "text",
-                   ellipse.type = "convex",
-                   ggtheme = theme_bw(base_family = "inter"),
-                   main = "K-means Clustering: PCA Space",
-                   labelsize = 8,
-                   palette = viridis(3, option = "plasma")) + 
-  theme(plot.title = element_text(hjust = 0.5, size = 12, family = "inter"),
-        text = element_text(family = "inter")) +
-  scale_color_viridis_d(name = "Cluster No.", labels = c("Cluster 1","Cluster 2","Cluster 3")) +
-  scale_fill_viridis_d(name = "Cluster No.", labels = c("Cluster 1","Cluster 2","Cluster 3")) +
-  guides(color = guide_legend(order = 1), fill = guide_legend(order = 1))
-
-# ==============================================================================
-# 5. CLUSTER COMPARISON AND VALIDATION
-# ==============================================================================
-
-# Add cluster assignments to original data frame
-df$cluster_original <- km$cluster
-df$cluster_pca <- km_pca$cluster
-
-# Display cluster comparison
-cat("Cluster comparison table:\n")
-cluster_table <- table(df$cluster_original, df$cluster_pca)
-print(cluster_table)
-
-# Create comparison plot
-p8 <- ggplot(df, aes(x = factor(cluster_original), y = factor(cluster_pca))) +
-  geom_count(aes(color = after_stat(n)), size = 5) +
-  scale_color_viridis_c(name = "Count", option = "viridis") +
-  labs(x = "Original Data Clusters", 
-       y = "PCA Space Clusters",
-       title = "Clustering Results Comparison") +
-  theme_bw(base_family = "inter") +
-  theme(plot.title = element_text(hjust = 0.5))
-
-# ==============================================================================
-# 6. SAVE RESULTS
-# ==============================================================================
-
-cat("Saving plots and results...\n")
-
-# Save individual plots
-ggsave("plots/01_pca_scree_plot.png", p1, width = 10, height = 6, dpi = 300)
-ggsave("plots/02_pca_biplot.png", p2, width = 10, height = 8, dpi = 300)
-ggsave("plots/03_pca_individuals.png", p3, width = 10, height = 8, dpi = 300)
-ggsave("plots/04_variable_contributions.png", p4, width = 12, height = 6, dpi = 300)
-ggsave("plots/05_optimal_clusters_comparison.png", p5, width = 15, height = 5, dpi = 300)
-ggsave("plots/06_kmeans_original_space.png", p6, width = 10, height = 8, dpi = 300)
-ggsave("plots/07_kmeans_pca_space.png", p7, width = 10, height = 8, dpi = 300)
-ggsave("plots/08_cluster_comparison.png", p8, width = 8, height = 6, dpi = 300)
-
-# Save summary results
-sink("plots/cluster_analysis_summary.txt")
-cat("=== CLUSTER ANALYSIS SUMMARY ===\n\n")
-cat("PCA Summary:\n")
-print(summary(pca_result))
-cat("\nK-means Clustering Results (Original Space):\n")
-print(km)
-cat("\nK-means Clustering Results (PCA Space):\n")
-print(km_pca)
-cat("\nCluster Assignment Comparison:\n")
-print(cluster_table)
-sink()
-
-# Display plots
-print(p1)
-print(p2)
-print(p3)
-print(p4)
-print(p5)
-print(p6)
-print(p7)
-print(p8)
-
-cat("Analysis complete! All plots and results saved to 'plots/' directory.\n")
 
 
 
