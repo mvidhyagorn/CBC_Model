@@ -14,12 +14,21 @@ suppressPackageStartupMessages({
   library(ggplot2)
   library(dplyr)
   library(gridExtra)
+  library(ggrepel)
+  library(showtext)  # For custom fonts
 })
+
+# Load Inter font
+font_add_google("Inter", "inter")
+showtext_auto()
 
 # Create output directory if it doesn't exist
 if (!dir.exists("plots")) {
   dir.create("plots")
 }
+
+# Set global theme with Inter font
+theme_set(theme_bw(base_family = "inter"))
 
 # ==============================================================================
 # 1. DATA PREPARATION
@@ -30,6 +39,9 @@ cat("Loading and preparing data...\n")
 df <- read.csv("covid_dataset.csv", header = TRUE)
 cat("Dataset dimensions:", dim(df), "\n")
 head(df)
+
+df <- df %>%
+  select(country_label, infec, pos, vac)
 
 # Standardize the dataset (columns 2, 3, 4)
 df_cleaned <- scale(df[, c(2, 3, 4)])
@@ -48,7 +60,7 @@ summary(pca_result)
 p1 <- fviz_eig(pca_result, addlabels = TRUE, ylim = c(0, 100), 
                fill = viridis(1)[1], color = viridis(1)[1],
                main = "Scree Plot: Variance Explained by PCs") +
-  theme_bw()
+  theme_bw(base_family = "inter")
 
 # Plot PCA biplot showing individuals and variables
 p2 <- fviz_pca_biplot(pca_result, 
@@ -57,7 +69,7 @@ p2 <- fviz_pca_biplot(pca_result,
                       col.var = "contrib",
                       repel = TRUE,
                       title = "PCA Biplot: Variables and Individuals") +
-  theme_bw()
+  theme_bw(base_family = "inter")
 
 # Plot individuals on PCA dimensions
 p3 <- fviz_pca_ind(pca_result,
@@ -65,7 +77,7 @@ p3 <- fviz_pca_ind(pca_result,
                    gradient.cols = viridis(3, option = "viridis"),
                    repel = TRUE,
                    title = "PCA: Individual Countries") +
-  theme_bw()
+  theme_bw(base_family = "inter")
 
 # Combine contribution plots for PC1 and PC2
 contrib_pc1 <- fviz_contrib(pca_result, choice = "var", axes = 1, top = 10)$data
@@ -83,7 +95,7 @@ p4 <- ggplot(combined_contrib, aes(x = reorder(name, contrib), y = contrib)) +
   facet_wrap(~ PC, scales = "free_y", nrow = 1) +
   labs(x = "Variables", y = "Contribution (%)", 
        title = "Variable Contributions to Principal Components") +
-  theme_bw() +
+  theme_bw(base_family = "inter") +
   theme(
     strip.text = element_text(size = 12, face = "bold"),
     strip.background = element_rect(fill = "lightgray"),
@@ -134,7 +146,7 @@ p5 <- ggplot(combined_data, aes(x = clusters, y = Value)) +
   facet_wrap(~ Method, scales = "free_y", nrow = 1) +
   labs(x = "Number of Clusters (k)", y = "Value",
        title = "Optimal Number of Clusters - Method Comparison") +
-  theme_bw() +
+  theme_bw(base_family = "inter") +
   theme(
     strip.text = element_text(size = 10, face = "bold"),
     strip.background = element_rect(fill = "lightgray"),
@@ -149,28 +161,75 @@ cat("Performing k-means clustering...\n")
 
 # Perform k-means clustering with k = 3
 set.seed(123)  # For reproducibility
+library(ggplot2)
+library(colorblindcheck)
+library(cols4all)
+
 km <- kmeans(df_cleaned, centers = 3, nstart = 25)
 km_pca <- kmeans(pca_coords, centers = 3, nstart = 25)
 
-# Plot clustering results on original data
+# Darker viridis palette
+pal_dark <- hcl.colors(n = 3, palette = "viridis")
+
+# Centroids in PCA space
+pca_df <- data.frame(PC1 = pca_result$x[, 1],
+                     PC2 = pca_result$x[, 2],
+                     cluster = factor(km$cluster),
+                     label = rownames(df_cleaned))
+
+# Plot clustering results on original data (shown in PCA space by fviz_cluster)
 p6 <- fviz_cluster(km, data = df_cleaned,
-                   geom = "text",
+                   geom = "point",
                    ellipse.type = "convex",
-                   ggtheme = theme_bw(),
+                   ggtheme = theme_bw(base_family = "inter"),
                    main = "K-means Clustering: Original Data Space",
-                   labelsize = 8,
-                   palette = viridis(3, option = "viridis")) + 
-  theme(plot.title = element_text(hjust = 0.5, size = 12))
+                   palette = pal_dark,
+                   show.clust.cent = FALSE,
+                   pointsize = 2) +
+  labs(x = "PC1", y = "PC2", color = NULL, fill = NULL, shape = NULL) +
+  scale_color_manual(values = pal_dark,
+                     labels = c("Cluster 1", "Cluster 2", "Cluster 3")) +
+  scale_fill_manual(values = pal_dark,
+                    labels = c("Cluster 1", "Cluster 2", "Cluster 3")) +
+  scale_shape_manual(values = c(16, 17, 15),
+                     labels = c("Cluster 1", "Cluster 2", "Cluster 3")) +
+  guides(color = guide_legend(override.aes = list(size = 3)),
+         fill = guide_legend(override.aes = list(size = 3)),
+         shape = guide_legend(override.aes = list(size = 3))) +
+  theme(legend.position = c(0.05, 0.95),
+        legend.justification = c(0, 1),
+        legend.background = element_rect(fill = "white", color = "black"),
+        legend.margin = margin(5, 5, 5, 5),
+        legend.title = element_blank(),                                       # Remove legend title
+        plot.title = element_text(hjust = 0.5, size = 12, family = "inter"),
+        text = element_text(family = "inter")) +
+  ggrepel::geom_text_repel(
+    data = pca_df,
+    aes(x = PC1, y = PC2, label = label),
+    color = "black",
+    size = 3,
+    family = "inter",
+    box.padding = 0.3,
+    point.padding = 0.2,
+    segment.color = "black",
+    segment.size = 0.3,
+    max.overlaps = Inf,
+    min.segment.length = 0
+  )
 
 # Plot clustering results on PCA coordinates
 p7 <- fviz_cluster(km_pca, data = pca_coords,
                    geom = "text",
                    ellipse.type = "convex",
-                   ggtheme = theme_bw(),
+                   ggtheme = theme_bw(base_family = "inter"),
                    main = "K-means Clustering: PCA Space",
                    labelsize = 8,
                    palette = viridis(3, option = "plasma")) + 
-  theme(plot.title = element_text(hjust = 0.5, size = 12))
+  theme(plot.title = element_text(hjust = 0.5, size = 12, family = "inter"),
+        text = element_text(family = "inter")) +
+  scale_color_viridis_d(name = "Cluster No.", labels = c("Cluster 1","Cluster 2","Cluster 3")) +
+  scale_fill_viridis_d(name = "Cluster No.", labels = c("Cluster 1","Cluster 2","Cluster 3")) +
+  guides(color = guide_legend(order = 1), fill = guide_legend(order = 1))
 
 # ==============================================================================
 # 5. CLUSTER COMPARISON AND VALIDATION
@@ -192,7 +251,7 @@ p8 <- ggplot(df, aes(x = factor(cluster_original), y = factor(cluster_pca))) +
   labs(x = "Original Data Clusters", 
        y = "PCA Space Clusters",
        title = "Clustering Results Comparison") +
-  theme_bw() +
+  theme_bw(base_family = "inter") +
   theme(plot.title = element_text(hjust = 0.5))
 
 # ==============================================================================
@@ -235,6 +294,8 @@ print(p7)
 print(p8)
 
 cat("Analysis complete! All plots and results saved to 'plots/' directory.\n")
+
+
 
 
 
