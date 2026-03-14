@@ -1,0 +1,54 @@
+cff-version: 1.2.0
+title: "CBC-SEIR Model Simulator: Cross-Border Control Model for Public Health Policy Evaluation"
+message: "If you use this software, please cite both the software and the associated paper."
+type: software
+version: "1.0.0"
+date-released: "2026-03-14"
+license: MIT
+repository-code: "https://github.com/mvidhyagorn/CBC_Model"
+url: "https://mvidhyagorn.github.io/CBC_Model/"
+keywords:
+  - mathematical-modeling
+  - SEIR-model
+  - COVID-19
+  - public-health
+  - international-travel
+  - k-means-clustering
+  - Thailand
+  - border-control
+authors:
+  - family-names: Mahd-Adam
+    given-names: Vidhyakorn
+    orcid: ""
+    affiliation: "Faculty of Tropical Medicine, Mahidol University"
+  - family-names: Rotejanaprasert
+    given-names: Chawarat
+    affiliation: "Faculty of Tropical Medicine, Mahidol University"
+  - family-names: Lawpoolsri
+    given-names: Saranath
+    affiliation: "Faculty of Tropical Medicine, Mahidol University"
+  - family-names: Thammawijaya
+    given-names: Panithee
+    affiliation: "Department of Disease Control, Ministry of Public Health"
+  - family-names: Pan-ngum
+    given-names: Wirichada
+    affiliation: "Mahidol-Oxford Tropical Medicine Research Unit (MORU)"
+preferred-citation:
+  type: article
+  title: "Mathematical modeling of public health policy for international travelers (PHPIT): A case study of the COVID-19 pandemic in Thailand"
+  journal: "BMC Public Health"
+  volume: 26
+  start: 68
+  year: 2026
+  doi: "10.1186/s12889-025-25811-5"
+  authors:
+    - family-names: Mahd-Adam
+      given-names: Vidhyakorn
+    - family-names: Rotejanaprasert
+      given-names: Chawarat
+    - family-names: Lawpoolsri
+      given-names: Saranath
+    - family-names: Thammawijaya
+      given-names: Panithee
+    - family-names: Pan-ngum
+      given-names: Wirichada

@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>CBC-SEIR Model — Interactive Simulator</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+:root{--sap:#002D72;--roy:#1E88E5;--gld:#F9A825;--ivory:#FFF8E1;
+--bg:#FFFDF5;--bg2:#F5F3ED;--bg3:#EDE9E0;--tx:#002D72;--tx2:#4A5568;--tx3:#8896A6;--bd:#D1D5DB;
+--font:'Inter',sans-serif;--mono:'SF Mono',Consolas,monospace;--r:10px;--sh:0 1px 3px rgba(0,45,114,.08)}
+@media(prefers-color-scheme:dark){:root{--bg:#0A1628;--bg2:#132039;--bg3:#1C2D4A;--tx:#E8EDF5;--tx2:#A0AEBF;--tx3:#6B7D94;--bd:#2D3F5A;--ivory:#132039}}
+*{box-sizing:border-box;margin:0;padding:0}body{font-family:var(--font);color:var(--tx);background:var(--bg);font-size:13px;line-height:1.6}
+.app{max-width:1140px;margin:0 auto;padding:16px}
+.hdr{background:var(--sap);color:#fff;padding:20px 24px;border-radius:var(--r);margin-bottom:12px}
+.hdr h1{font-size:20px;font-weight:700}.hdr .sub{font-size:12px;opacity:.8;margin-top:4px}
+.nav{display:flex;gap:2px;background:var(--bg2);border-radius:var(--r);padding:3px;margin-bottom:14px;flex-wrap:wrap;box-shadow:var(--sh)}
+.nb{flex:1;min-width:68px;padding:8px 4px;font-size:10.5px;font-weight:500;border:none;background:0;color:var(--tx2);cursor:pointer;border-radius:8px;transition:.15s;text-align:center;font-family:var(--font)}
+.nb.a{background:var(--bg);color:var(--sap);box-shadow:var(--sh);font-weight:600}.nb:hover:not(.a){background:var(--bg3)}
+.T{display:none}.T.a{display:block}
+.P{background:var(--bg2);border-radius:var(--r);padding:14px 16px;margin-bottom:10px;box-shadow:var(--sh)}
+.sl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--roy);margin-bottom:8px}
+.G{display:grid;gap:10px}.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:minmax(0,280px) minmax(0,1fr)}.g4{grid-template-columns:repeat(4,1fr)}
+select,input[type=number],input[type=text],textarea{font-size:12px;padding:6px 10px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font-family:var(--font)}
+select:focus,input:focus{border-color:var(--roy);outline:0;box-shadow:0 0 0 3px rgba(30,136,229,.15)}
+input[type=range]{width:100%;accent-color:var(--roy)}
+button{font-size:12px;padding:7px 16px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);cursor:pointer;font-family:var(--font);font-weight:500;transition:.15s}
+button:hover{background:var(--bg3)}button.pri{background:var(--roy);color:#fff;border-color:var(--roy)}
+button.gld{background:var(--gld);color:var(--sap);border-color:var(--gld);font-weight:600}
+.sr{display:flex;align-items:center;gap:8px;margin-bottom:7px}.sr label{min-width:74px;color:var(--tx2);font-size:12px;font-weight:500}
+.sr select,.sr input[type=number]{flex:1;min-width:0}.sr .vl{min-width:36px;text-align:right;font-weight:600;font-size:11px;font-family:var(--mono);color:var(--sap)}
+.M{background:var(--bg);border-radius:var(--r);padding:10px 12px;text-align:center;box-shadow:var(--sh)}.M .l{font-size:10px;color:var(--tx3);font-weight:500}.M .n{font-size:20px;font-weight:700}
+.CB{position:relative;width:100%;height:280px}
+.tw{max-height:380px;overflow:auto;border:1px solid var(--bd);border-radius:var(--r)}
+table.dt{width:100%;border-collapse:collapse;font-size:11px}table.dt th{position:sticky;top:0;background:var(--sap);color:#fff;padding:6px 8px;text-align:left;font-weight:600;font-size:10px}
+table.dt td{padding:5px 8px;border-bottom:1px solid var(--bg3)}table.dt tr:hover td{background:var(--ivory)}
+.st{display:flex;gap:3px;margin-bottom:8px;flex-wrap:wrap}.stb{padding:5px 12px;font-size:11px;border-radius:8px;cursor:pointer;border:1px solid var(--bd);background:0;color:var(--tx2);font-weight:500;font-family:var(--font)}.stb.a{background:var(--roy);color:#fff;border-color:var(--roy)}
+.leg{display:flex;flex-wrap:wrap;gap:10px;font-size:11px;color:var(--tx2);margin-bottom:6px}.leg span{display:flex;align-items:center;gap:3px}.leg .d{width:8px;height:8px;border-radius:2px}
+.ct{display:inline-block;background:var(--bg3);padding:2px 8px;border-radius:10px;margin:2px;font-size:10px;font-weight:500}
+.sc{background:var(--bg);border:1px solid var(--bd);border-radius:var(--r);padding:12px;margin-bottom:8px;position:relative;box-shadow:var(--sh)}
+.sc .rb{position:absolute;top:8px;right:10px;background:0;border:0;color:var(--tx3);cursor:pointer;font-size:14px}.sc .rb:hover{color:#E24B4A}
+.sc .sp{display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:11px}.sc .sp label{display:flex;align-items:center;gap:4px;color:var(--tx2)}
+.dz{border:2px dashed var(--roy);border-radius:var(--r);padding:24px;text-align:center;color:var(--tx3);cursor:pointer;background:rgba(30,136,229,.03)}
+.dz:hover,.dz.dg{background:rgba(30,136,229,.08)}
+.log{background:var(--bg);border:1px solid var(--bd);border-radius:var(--r);padding:8px 10px;font-family:var(--mono);font-size:10px;color:var(--tx2);max-height:130px;overflow:auto;white-space:pre-wrap;margin-top:6px}
+.fb{display:flex;gap:2px;border-radius:var(--r);overflow:hidden;border:1px solid var(--bd);margin-bottom:10px;box-shadow:var(--sh)}
+.fs{flex:1;text-align:center;padding:7px 3px;font-size:10px;min-width:0}.fs .sn{font-weight:700;font-size:11px}.fs .sd{font-size:9px;opacity:.7}
+.cb2{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--tx2);cursor:pointer;user-select:none}
+.ac{background:var(--bg);border:1px solid var(--bd);border-radius:var(--r);padding:20px 24px;margin-bottom:12px;box-shadow:var(--sh)}
+.ac h3{font-size:15px;font-weight:700;margin-bottom:8px;color:var(--sap)}.ac p{font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:6px}.ac a{color:var(--roy);font-weight:500}
+.tip{position:relative;cursor:help;border-bottom:1px dotted var(--roy)}.tip:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:var(--sap);color:#fff;padding:8px 12px;border-radius:8px;font-size:12px;z-index:99;max-width:320px;white-space:normal;box-shadow:0 4px 16px rgba(0,0,0,.25);line-height:1.5}.tip:hover::before{content:'';position:absolute;bottom:calc(100% + 2px);left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--sap);z-index:99}
+.eq{background:var(--ivory);border-left:4px solid var(--gld);padding:16px 20px;border-radius:0 10px 10px 0;margin:10px 0;font-family:var(--mono);font-size:15px;color:var(--sap);line-height:1.8}
+.eq .desc{font-family:var(--font);font-size:13px;color:var(--tx2);margin-top:6px;line-height:1.6}
+.gl{padding:14px 16px;border-bottom:1px solid var(--bg3)}.gl:last-child{border:0}
+.gl .tm{font-weight:700;font-size:15px;color:var(--sap)}.gl .sy{font-family:var(--mono);font-size:14px;color:var(--roy);margin-left:8px;background:var(--ivory);padding:2px 8px;border-radius:6px}
+.gl .df{font-size:13px;color:var(--tx2);margin-top:4px;line-height:1.6}.gl .rf{font-size:12px;color:var(--roy);margin-top:3px}
+.gl .rf a{color:var(--roy);text-decoration:none;font-weight:500}.gl .rf a:hover{text-decoration:underline}
+.rk{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bg3);font-size:12px}.rk:last-child{border:0}
+.badge{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;color:#fff;flex-shrink:0}
+#leafMap{height:420px;border-radius:var(--r);z-index:1}
+.seir-flow{overflow-x:auto;padding:8px 0}
+.seir-flow svg text{font-family:var(--font)}
+</style></head><body><div class="app">
+<div class="hdr" style="position:relative;overflow:hidden;padding:24px 28px">
+<img src="map.jpg" style="position:absolute;top:-20%;left:0;width:100%;opacity:.12;pointer-events:none" onerror="this.style.display='none'">
+<div style="position:relative;z-index:1">
+<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+<h1 style="font-size:22px">CBC-SEIR Model Simulator</h1>
+<span style="background:rgba(249,168,37,.9);color:var(--sap);font-size:10px;font-weight:700;padding:3px 10px;border-radius:12px">v1.0</span>
+</div>
+<div class="sub" style="margin-top:6px">Cross-Border Control Model for Public Health Policy Evaluation — Mahd-Adam et al. BMC Public Health 2026</div>
+<div style="display:flex;gap:16px;margin-top:8px;font-size:11px;opacity:.7">
+<span>Updated: 14 March 2026</span>
+<span>License: MIT</span>
+<span><a href="https://github.com/mvidhyagorn/CBC_Model" target="_blank" style="color:#FFF8E1">GitHub</a></span>
+<span><a href="https://mvidhyagorn.github.io/vma/" target="_blank" style="color:#FFF8E1">Author</a></span>
+</div>
+</div>
+</div>
+<div class="nav" id="mainNav">
+<button class="nb a" onclick="showTab('about')">About</button>
+<button class="nb" onclick="showTab('ml')">ML Clustering</button>
+<button class="nb" onclick="showTab('map')">World Map</button>
+<button class="nb" onclick="showTab('stages')">Travel Stages</button>
+<button class="nb" onclick="showTab('sim')">Simulator</button>
+<button class="nb" onclick="showTab('heatmap')">Heatmap</button>
+<button class="nb" onclick="showTab('eq')">Equations</button>
+<button class="nb" onclick="showTab('glossary')">Glossary</button>
+<button class="nb" onclick="showTab('api')">Live Data</button>
+</div>
+
+<!-- ABOUT -->
+<div id="tab-about" class="T a">
+<div class="ac"><h3>About</h3>
+<p>Developed as part of the <strong>MSc thesis in Biomedical and Health Informatics</strong> by <strong>Vidhyakorn Mahd-Adam</strong>, Faculty of Tropical Medicine, Mahidol University / MORU.</p>
+<div style="background:var(--ivory);padding:14px 18px;border-radius:var(--r);border-left:4px solid var(--roy);margin:12px 0;font-size:13px;line-height:1.8">
+Mahd-Adam V, Rotejanaprasert C, Lawpoolsri S, Thammawijaya P, Pan-ngum W. <em>Mathematical modeling of public health policy for international travelers (PHPIT).</em> BMC Public Health 2026;26:68.<br>
+<a href="https://doi.org/10.1186/s12889-025-25811-5" target="_blank">doi:10.1186/s12889-025-25811-5</a></div>
+<p>Repository: <a href="https://github.com/mvidhyagorn/CBC_Model" target="_blank">github.com/mvidhyagorn/CBC_Model</a></p>
+<p><strong>Hosting:</strong> Deploy this HTML to GitHub Pages (<code>docs/index.html</code>). For R Shiny, use <a href="https://www.shinyapps.io" target="_blank">shinyapps.io</a> (free, 25h/mo).</p></div>
+<div class="ac"><h3>Contact</h3>
+<p><strong>Vidhyakorn Mahd-Adam</strong> — MSc Biomedical and Health Informatics</p>
+<p>Faculty of Tropical Medicine, Mahidol University, Bangkok, Thailand</p>
+<p>Personal page: <a href="https://mvidhyagorn.github.io/vma/" target="_blank">mvidhyagorn.github.io/vma</a></p>
+<p>GitHub: <a href="https://github.com/mvidhyagorn/CBC_Model" target="_blank">github.com/mvidhyagorn/CBC_Model</a></p></div>
+
+<div class="ac"><h3>Software registration &amp; licensing</h3>
+<p><strong>Yes, this qualifies as research software.</strong> It implements computational algorithms (K-means clustering, PCA, SEIR simulation) with an interactive interface. Here is how to register and license it:</p>
+<table class="dt" style="margin:10px 0"><thead><tr><th>Step</th><th>What to do</th><th>File/service</th></tr></thead><tbody>
+<tr><td><strong>1. License</strong></td><td>Add an MIT license (permissive, allows reuse with attribution). Already included.</td><td><code>LICENSE</code></td></tr>
+<tr><td><strong>2. Citation</strong></td><td>Add <code>CITATION.cff</code> — GitHub auto-detects this and shows a "Cite this repository" button on your repo page.</td><td><code>CITATION.cff</code></td></tr>
+<tr><td><strong>3. DOI for software</strong></td><td>Archive on <a href="https://zenodo.org" target="_blank">Zenodo</a>. Link your GitHub repo → Zenodo mints a DOI for each release. This makes the software independently citable.</td><td>Zenodo + GitHub integration</td></tr>
+<tr><td><strong>4. Version tag</strong></td><td>Create a GitHub release with tag <code>v1.0.0</code>. Zenodo will automatically archive it.</td><td><code>git tag v1.0.0</code></td></tr>
+<tr><td><strong>5. Software journal</strong></td><td>Optional: Publish in <a href="https://joss.theoj.org" target="_blank">JOSS</a> (Journal of Open Source Software) or <a href="https://www.sciencedirect.com/journal/softwarex" target="_blank">SoftwareX</a> for a peer-reviewed software paper.</td><td>Separate submission</td></tr>
+</tbody></table>
+<p style="font-size:12px;color:var(--tx2);margin-top:8px"><strong>Files included in this release:</strong> <code>LICENSE</code> (MIT), <code>CITATION.cff</code> (GitHub citation metadata), <code>cbc_model_v5.html</code> (interactive prototype), <code>seir_map.jpg</code>, <code>map.jpg</code> (assets).</p>
+</div>
+</div>
+
+<!-- ML -->
+<div id="tab-ml" class="T"><div class="G g3"><div>
+<div class="P"><div class="sl">Batch upload (CSV)</div>
+<div class="dz" id="dropZone" onclick="$('csvFile').click()" ondragover="event.preventDefault();this.classList.add('dg')" ondragleave="this.classList.remove('dg')" ondrop="handleDrop(event)">
+📂 Drop CSV or click<br><span style="font-size:10px">Cols: country, infection_rate, test_positivity, vax_coverage</span>
+<input type="file" id="csvFile" accept=".csv,.tsv" style="display:none" onchange="handleFile(this.files[0])"></div>
+<textarea id="csvPaste" rows="3" style="width:100%;margin-top:6px" placeholder="country,infection_rate,test_positivity,vax_coverage"></textarea>
+<div style="display:flex;gap:6px;margin-top:6px"><button class="pri" onclick="parsePasted()">Parse</button><button onclick="resetC()">Reset</button></div>
+<div class="log" id="mlLog">Ready.</div></div>
+<div class="P"><div class="sl">K-means settings</div>
+<div class="sr"><label>K</label><select id="mlK" onchange="doKM()"><option>2</option><option selected>3</option><option>4</option><option>5</option><option>6</option></select></div>
+<div class="sr"><label>Restarts</label><input type="number" id="mlR" value="10" min="1" max="50" onchange="doKM()"></div>
+<button class="gld" onclick="doKM()" style="width:100%;margin-top:4px">Run K-means</button></div>
+<div class="P"><div class="sl">Validation</div><div class="G g4" id="valM"></div></div>
+<div class="P"><div class="sl">Cluster parameters</div><div id="cPar"></div>
+<button class="pri" onclick="showTab('sim')" style="width:100%;margin-top:8px">Apply to simulator →</button></div>
+</div><div>
+<div class="P"><div class="sl">PCA scatter</div><div class="leg" id="pcaL"></div><div class="CB" style="height:320px"><canvas id="pcaCv"></canvas></div></div>
+<div class="P"><div class="st" id="mlST"><div class="stb a" data-t="elbow" onclick="swML('elbow')">Elbow</div><div class="stb" data-t="sil" onclick="swML('sil')">Silhouette</div><div class="stb" data-t="mem" onclick="swML('mem')">Members</div></div>
+<div id="ml2W" class="CB" style="height:220px"><canvas id="ml2Cv"></canvas></div><div id="memW" style="display:none"></div></div>
+</div></div></div>
+
+<!-- LEAFLET MAP -->
+<div id="tab-map" class="T">
+<div class="P"><div class="sl">Departure country risk — interactive world map</div>
+<p style="font-size:12px;color:var(--tx2);margin-bottom:8px">Countries colored by K-means cluster. Click markers for details. Run ML Clustering first.</p>
+<div id="leafMap"></div>
+<div class="leg" id="mapLeg" style="margin-top:8px"></div></div>
+</div>
+
+<!-- STAGES with SEIR flow -->
+<div id="tab-stages" class="T"><div class="G g3"><div>
+<div class="P"><div class="sl">Configure stages</div>
+<p style="font-size:11px;color:var(--tx2);margin-bottom:8px">Each stage is a row in the SEIR flow. Add/remove to change the model structure dynamically.</p>
+<div id="stgCards"></div>
+<button onclick="addStg()" style="width:100%;margin-top:6px">+ Add stage</button>
+<button onclick="rstStg()" style="margin-top:6px">Reset default</button></div>
+</div><div>
+<div class="P" style="position:relative;overflow:hidden;min-height:520px">
+<div class="sl">SEIR flow diagram — Geographic travel context</div>
+<img src="seir_map.jpg" style="position:absolute;top:0;right:-40px;width:65%;opacity:.10;pointer-events:none;z-index:0" onerror="this.style.display='none'">
+<div id="seirFlow" style="position:relative;z-index:1"></div>
+</div>
+<div class="P"><div class="sl">Pipeline &amp; summary</div><div id="stgFlow" class="fb"></div>
+<div class="tw" id="stgSum"></div></div>
+</div></div></div>
+
+<!-- SIMULATOR -->
+<div id="tab-sim" class="T">
+<div id="simFB" class="fb"></div>
+<div class="G g3"><div>
+<div class="P"><div class="sl">Scenario</div>
+<div class="sr"><label><span class="tip" data-tip="Departure country risk cluster from K-means analysis">Cluster</span></label><select id="sC" onchange="doSim()"></select></div>
+<div class="sr"><label><span class="tip" data-tip="Pre-departure RT-PCR testing timing">Testing</span></label><select id="sT" onchange="doSim()"><option value="none">No testing</option><option value="72">72h</option><option value="48">48h</option><option value="24">24h</option><option value="0">0h</option></select></div>
+<div class="sr"><label><span class="tip" data-tip="RT-PCR on arrival at Thai airport">Entry test</span></label><select id="sE" onchange="doSim()"><option value="0">No</option><option value="1">Yes</option></select></div>
+<div class="sr"><label><span class="tip" data-tip="When required: all travelers vaccinated (ω=1.0)">Vax cert</span></label><select id="sV" onchange="doSim()"><option value="0">Not required</option><option value="1">Required</option></select></div>
+<div class="sr"><label><span class="tip" data-tip="Facility quarantine duration with exit testing">Quarantine</span></label><select id="sQ" onchange="doSim()"><option value="0">None</option><option value="1">1d</option><option value="3">3d</option><option value="5">5d</option><option value="7">7d</option><option value="10">10d</option><option value="14">14d</option></select></div></div>
+<div class="P"><div class="sl">Parameters</div>
+<div class="sr"><label>N</label><input type="range" id="sN" min="10000" max="500000" step="10000" value="100000" oninput="doSim()"><span class="vl" id="vN">100k</span></div>
+<div class="sr"><label>Incub. d</label><input type="range" id="sLP" min="2" max="7" step="0.5" value="4" oninput="doSim()"><span class="vl" id="vLP">4</span></div>
+<div class="sr"><label>Infect. d</label><input type="range" id="sIP" min="7" max="21" value="14" oninput="doSim()"><span class="vl" id="vIP">14</span></div>
+<div class="sr"><label>Severe %</label><input type="range" id="sPi" min="0" max="0.4" step="0.02" value="0.18" oninput="doSim()"><span class="vl" id="vPi">18%</span></div>
+<div class="sr"><label>FN μ</label><input type="range" id="sMu" min="0.5" max="1" step="0.02" value="0.84" oninput="doSim()"><span class="vl" id="vMu">0.84</span></div>
+<div class="sr"><label>FN τ</label><input type="range" id="sTau" min="0.1" max="0.6" step="0.02" value="0.29" oninput="doSim()"><span class="vl" id="vTau">0.29</span></div>
+<div class="sr"><label>VE ϑ</label><input type="range" id="sTh" min="0" max="0.8" step="0.05" value="0.3" oninput="doSim()"><span class="vl" id="vTh">0.30</span></div>
+<div class="sr"><label>VE δ</label><input type="range" id="sDe" min="0" max="0.95" step="0.05" value="0.7" oninput="doSim()"><span class="vl" id="vDe">0.70</span></div></div>
+</div><div>
+<div class="P"><div class="G g4" id="simM"></div></div>
+<div class="P"><div class="st" id="simST"><div class="stb a" data-t="seir" onclick="swSim('seir')">SEIR</div><div class="stb" data-t="mc" onclick="swSim('mc')">Missed cases</div><div class="stb" data-t="cmp" onclick="swSim('cmp')">Compare Q</div></div>
+<div class="leg" id="simL"></div><div class="CB"><canvas id="simCv"></canvas></div></div>
+<div class="P"><div class="sl">Quarantine comparison</div><div id="qBr"></div></div>
+</div></div></div>
+
+<!-- HEATMAP -->
+<div id="tab-heatmap" class="T">
+<div class="P"><div class="sl">Figure 3 — reduction of missed cases (%) from 336 PHPIT scenarios</div>
+<p style="font-size:12px;color:var(--tx2);margin-bottom:8px">Rows: Un/C1/C2/C3 by quarantine (0–14d). Cols: testing. Split: vaccination cert. Color: purple-dark (0%) → pink → orange → yellow (100%). * = baseline (no intervention). h = hours pre-departure. ET = entry testing.</p>
+<div id="hmFig3" style="overflow-x:auto"></div>
+<div style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:11px;color:var(--tx2)">
+<span>0%</span><div style="width:200px;height:14px;border-radius:7px;background:linear-gradient(90deg,#FFF8E1,#FFE082,#FFB74D,#64B5F6,#1E88E5,#002D72)"></div><span>100%</span></div></div>
+<div class="G g2">
+<div class="P"><div class="sl">Top 5 most effective</div><div id="t5B"></div></div>
+<div class="P"><div class="sl">Top 5 least effective</div><div id="t5W"></div></div></div></div>
+
+<!-- EQUATIONS -->
+<div id="tab-eq" class="T"><div class="P">
+<div class="sl">SEIR difference equations — Table S5</div>
+<p style="font-size:14px;color:var(--tx2);margin-bottom:14px">Discretized SEIR model. Each day (t) at stage (p) computed via difference equations. All equations from <a href="https://doi.org/10.1186/s12889-025-25811-5" target="_blank">Additional File 2, Table S5</a>.</p>
+
+<div class="eq"><strong>Initial conditions (t = 0):</strong><br>
+S₀ = N − α·σ·N &emsp; E₀ = ½·α·σ·N &emsp; I₀ = ½·α·σ·N &emsp; R₀ = 0
+<div class="desc">N = 100,000 travelers/week. α = cluster infection rate/million/day. σ = 1 − ϑ·ω (vaccine-adjusted transmission). Initial infected split 50:50 between E and I compartments.</div></div>
+
+<div class="eq"><strong>Susceptible compartment:</strong><br>
+S(t,p) = S(t−1,p−1) − α·σ · S(t−1,p−1)
+<div class="desc">Fraction α·σ of susceptibles transitions to exposed each day. During quarantine stages, α = 0 (no new transmission). During travel (P4), α is doubled for close-contact risk. <a href="https://doi.org/10.1016/j.jobe.2023.108299" target="_blank">[26]</a></div></div>
+
+<div class="eq"><strong>Exposed compartment:</strong><br>
+E(t,p) = E(t−1,p−1) + α·σ·S(t−1,p−1) − β·E(t−1,p−1) − (1−μ)·E(t−1,p−1)
+<div class="desc">Gains: new infections from S. Losses: β = 1/incubation transitions to I <a href="https://doi.org/10.7326/M20-0504" target="_blank">[4]</a>; testing detection (1−μ) where μ = 0.84 false-negative rate during latency <a href="https://doi.org/10.7326/M20-1495" target="_blank">[1]</a>. Testing term applies only at testing stages (P2, A).</div></div>
+
+<div class="eq"><strong>Infectious compartment:</strong><br>
+I(t,p) = I(t−1,p−1) + β·E(t−1,p−1) − γ·I(t−1,p−1) − (1−τ)·I(t−1,p−1) − π·(1−ρ)·I(t−1,p−1)
+<div class="desc">Gains: E→I at rate β. Losses: recovery γ = 1/14 <a href="https://doi.org/10.1038/s41467-020-20568-4" target="_blank">[5]</a>; testing detection (1−τ) where τ = 0.29 <a href="https://doi.org/10.7326/M20-1495" target="_blank">[1]</a>; severe symptoms π·(1−ρ) cause trip cancellation or detection <a href="https://www.who.int/publications/i/item/WHO-2019-nCoV-clinical-2021-2" target="_blank">[6]</a>.</div></div>
+
+<div class="eq"><strong>Recovered:</strong><br>
+R(t,p) = R(t−1,p−1) + γ · I(t−1,p−1)
+<div class="desc">Accumulates at recovery rate γ = 1/infectious period.</div></div>
+
+<div class="eq"><strong>Missed cases (primary output):</strong><br>
+MC(t,p) = E(t,p) + I(t,p)
+<div class="desc">Undetected infected travelers at any stage. Final MC after all stages = individuals entering Thai communities undetected.</div></div>
+
+<div class="eq"><strong>Vaccine reduction factors:</strong><br>
+σ = 1 − ϑ·ω &emsp;(transmission)&emsp; ρ = 1 − δ·ω &emsp;(severity)
+<div class="desc">ϑ = 0.30 vaccine efficacy vs transmission <a href="https://doi.org/10.1038/s41598-021-94719-y" target="_blank">[2]</a>. δ = 0.70 vs severe disease <a href="https://doi.org/10.1016/S0140-6736(22)00152-0" target="_blank">[3]</a>. ω = vaccination coverage (cluster-specific, or 1.0 if certificate required).</div></div>
+</div></div>
+
+<!-- GLOSSARY -->
+<div id="tab-glossary" class="T"><div class="P"><div class="sl">Glossary</div>
+<div class="st"><div class="stb a" data-t="par" onclick="swGl('par')">Parameters</div><div class="stb" data-t="stg" onclick="swGl('stg')">Stages</div><div class="stb" data-t="con" onclick="swGl('con')">Concepts</div></div>
+<div id="gl-par" style="background:var(--bg);border-radius:var(--r)">
+<div class="gl"><span class="tm">Infection rate</span><span class="sy">α</span><span class="df">Daily infections per million in departure country.</span><span class="rf"><a href="https://github.com/owid/covid-19-data" target="_blank">OWID COVID-19 Dataset [18]</a></span></div>
+<div class="gl"><span class="tm">Rate of becoming infectious</span><span class="sy">β = 1/LP</span><span class="df">Reciprocal of incubation period (~4 days). Default: 0.25.</span><span class="rf"><a href="https://doi.org/10.7326/M20-0504" target="_blank">Lauer et al. Ann Intern Med 2020 [4]</a></span></div>
+<div class="gl"><span class="tm">Recovery rate</span><span class="sy">γ = 1/IP</span><span class="df">Reciprocal of infectious period (~14 days). Default: 0.0714.</span><span class="rf"><a href="https://doi.org/10.1038/s41467-020-20568-4" target="_blank">van Kampen et al. Nat Commun 2021 [5]</a></span></div>
+<div class="gl"><span class="tm">Severe symptom probability</span><span class="sy">π = 0.18</span><span class="df">18–20% moderate-to-severe. Cancel travel (P1–P3) or detected (P4+).</span><span class="rf"><a href="https://www.who.int/publications/i/item/WHO-2019-nCoV-clinical-2021-2" target="_blank">WHO Living Guidance 2021 [6]</a></span></div>
+<div class="gl"><span class="tm">False-negative (latent)</span><span class="sy">μ = 0.84</span><span class="df">84% false-negative during incubation.</span><span class="rf"><a href="https://doi.org/10.7326/M20-1495" target="_blank">Kucirka et al. Ann Intern Med 2020 [1]</a></span></div>
+<div class="gl"><span class="tm">False-negative (infectious)</span><span class="sy">τ = 0.29</span><span class="df">29% false-negative during infectious period.</span><span class="rf"><a href="https://doi.org/10.7326/M20-1495" target="_blank">Kucirka et al. Ann Intern Med 2020 [1]</a></span></div>
+<div class="gl"><span class="tm">Vaccine efficacy (transmission)</span><span class="sy">ϑ = 0.30</span><span class="df">30% reduction in transmission.</span><span class="rf"><a href="https://doi.org/10.1038/s41598-021-94719-y" target="_blank">Swan et al. Sci Rep 2021 [2]</a></span></div>
+<div class="gl"><span class="tm">Vaccine efficacy (severity)</span><span class="sy">δ = 0.70</span><span class="df">70% reduction in severe disease.</span><span class="rf"><a href="https://doi.org/10.1016/S0140-6736(22)00152-0" target="_blank">Feikin et al. Lancet 2022 [3]</a></span></div>
+<div class="gl"><span class="tm">Vaccination coverage</span><span class="sy">ω</span><span class="df">Cluster-specific proportion. ω = 1.0 when certificate required.</span><span class="rf"><a href="https://github.com/owid/covid-19-data" target="_blank">OWID [18]</a></span></div>
+</div>
+<div id="gl-stg" style="display:none;background:var(--bg);border-radius:var(--r)">
+<div class="gl"><span class="tm">P1 — COE / Vax certificate</span><span class="df">Registration + vaccine cert. 2-day exposure period.</span><span class="rf"><a href="https://thaiembdc.org/wp-content/uploads/2021/01/ThailandPlus-Eng.pdf" target="_blank">Royal Thai Embassy [10]</a></span></div>
+<div class="gl"><span class="tm">P2 — Pre-test wait</span><span class="df">Wait until testing window (72/48/24/0h). Positive = denied travel.</span></div>
+<div class="gl"><span class="tm">P3 — Post-test</span><span class="df">After negative test, awaiting departure. Ongoing exposure.</span></div>
+<div class="gl"><span class="tm">P4 — Travel</span><span class="df">Air transit. 2× infection rate.</span><span class="rf"><a href="https://doi.org/10.1016/j.jobe.2023.108299" target="_blank">Yang et al. J Build Eng 2024 [26]</a></span></div>
+<div class="gl"><span class="tm">A — Arrival</span><span class="df">Entry testing + symptom screening at Thai airport.</span></div>
+<div class="gl"><span class="tm">Q — Quarantine</span><span class="df">0–14 day facility quarantine. No transmission. Exit test.</span><span class="rf"><a href="https://ddc.moph.go.th/" target="_blank">DDC Guideline 2021 [28]</a></span></div>
+</div>
+<div id="gl-con" style="display:none;background:var(--bg);border-radius:var(--r)">
+<div class="gl"><span class="tm">CBC model</span><span class="df">Cross-Border Control: clustering + SEIR intervention simulation.</span></div>
+<div class="gl"><span class="tm">SEIR</span><span class="df">Susceptible → Exposed → Infectious → Recovered. Discretized daily.</span><span class="rf"><a href="https://docs.idmod.org/projects/emod-hiv/en/latest/model-seir.html" target="_blank">IDM SEIR [12]</a></span></div>
+<div class="gl"><span class="tm">Missed cases</span><span class="df">Undetected E+I entering communities. Primary outcome.</span></div>
+<div class="gl"><span class="tm">K-means</span><span class="df">Lloyd's algorithm + K-means++ init. Equivalent to R kmeans().</span></div>
+<div class="gl"><span class="tm">PCA</span><span class="df">PC1 = 53.2% var (transmission risk), PC2 = 34% (immunity).</span></div>
+<div class="gl"><span class="tm">Silhouette</span><span class="df">Cluster quality [-1,1]. Paper: 0.439.</span><span class="rf"><a href="https://doi.org/10.1016/0377-0427(87)90125-7" target="_blank">Rousseeuw 1987 [29]</a></span></div>
+</div></div></div>
+
+<!-- API -->
+<div id="tab-api" class="T"><div class="P"><div class="sl">Live data from OWID</div>
+<p style="font-size:13px;color:var(--tx2);margin-bottom:10px">Fetches latest COVID-19 data from <a href="https://github.com/owid/covid-19-data" target="_blank">Our World in Data</a>. Data is automatically standardized (z-score, n−1) before K-means and PCA — identical to R's <code>scale()</code>. Country names are matched by ISO-3 code for accuracy.</p>
+<button class="gld" onclick="fetchOWID()" id="apiFetchBtn">Fetch latest OWID data →</button>
+<div class="log" id="apiLog">Ready.</div>
+<div id="apiStatus" style="margin-top:8px"></div></div>
+<div class="P"><div class="sl">Preview</div><div class="tw" id="apiTable"></div></div></div>
+
+</div>
+<script>
+
+const CDATA=[
+{iso:"FRA",name:"France",infec:180,pos:.06,vax:72,lat:46.2,lon:2.2},{iso:"DEU",name:"Germany",infec:200,pos:.07,vax:68,lat:51.2,lon:10.4},{iso:"AUS",name:"Australia",infec:120,pos:.04,vax:78,lat:-25.3,lon:133.8},{iso:"JPN",name:"Japan",infec:90,pos:.03,vax:75,lat:36.2,lon:138.3},{iso:"GBR",name:"UK",infec:210,pos:.08,vax:70,lat:55.4,lon:-3.4},{iso:"USA",name:"USA",infec:250,pos:.09,vax:62,lat:37.1,lon:-95.7},{iso:"CAN",name:"Canada",infec:160,pos:.05,vax:74,lat:56.1,lon:-106.3},{iso:"ISR",name:"Israel",infec:190,pos:.07,vax:80,lat:31,lon:34.9},{iso:"ITA",name:"Italy",infec:170,pos:.06,vax:73,lat:41.9,lon:12.6},{iso:"ESP",name:"Spain",infec:175,pos:.06,vax:71,lat:40.5,lon:-3.7},{iso:"SGP",name:"Singapore",infec:550,pos:.18,vax:42,lat:1.4,lon:103.8},{iso:"HRV",name:"Croatia",infec:580,pos:.19,vax:45,lat:45.1,lon:15.2},{iso:"SVN",name:"Slovenia",infec:620,pos:.2,vax:55,lat:46.2,lon:14.9},{iso:"EST",name:"Estonia",infec:670,pos:.22,vax:58,lat:58.6,lon:25},{iso:"LVA",name:"Latvia",infec:640,pos:.21,vax:52,lat:56.9,lon:24.1},{iso:"LTU",name:"Lithuania",infec:660,pos:.21,vax:54,lat:55.2,lon:23.9},{iso:"SRB",name:"Serbia",infec:590,pos:.19,vax:43,lat:44,lon:21},{iso:"GEO",name:"Georgia",infec:610,pos:.2,vax:28,lat:42.3,lon:43.4},{iso:"ARM",name:"Armenia",infec:570,pos:.18,vax:30,lat:40.1,lon:45},{iso:"ROU",name:"Romania",infec:560,pos:.18,vax:38,lat:45.9,lon:25},{iso:"BGR",name:"Bulgaria",infec:630,pos:.2,vax:27,lat:42.7,lon:25.5},{iso:"THA",name:"Thailand",infec:680,pos:.22,vax:40,lat:15.9,lon:100.9},{iso:"IND",name:"India",infec:35,pos:.04,vax:15,lat:20.6,lon:79},{iso:"IDN",name:"Indonesia",infec:40,pos:.05,vax:22,lat:-.8,lon:113.9},{iso:"BGD",name:"Bangladesh",infec:25,pos:.03,vax:28,lat:23.7,lon:90.4},{iso:"PAK",name:"Pakistan",infec:20,pos:.02,vax:18,lat:30.4,lon:69.3},{iso:"NGA",name:"Nigeria",infec:10,pos:.01,vax:5,lat:9.1,lon:8.7},{iso:"GHA",name:"Ghana",infec:12,pos:.01,vax:8,lat:7.9,lon:-1},{iso:"KEN",name:"Kenya",infec:15,pos:.02,vax:12,lat:-.02,lon:37.9},{iso:"ETH",name:"Ethiopia",infec:8,pos:.01,vax:4,lat:9.1,lon:40.5},{iso:"MEX",name:"Mexico",infec:50,pos:.05,vax:52,lat:23.6,lon:-102.6},{iso:"COL",name:"Colombia",infec:45,pos:.05,vax:45,lat:4.6,lon:-74.3},{iso:"PHL",name:"Philippines",infec:30,pos:.03,vax:32,lat:12.9,lon:121.8},{iso:"VNM",name:"Vietnam",infec:28,pos:.03,vax:55,lat:14.1,lon:108.3},{iso:"IRN",name:"Iran",infec:55,pos:.06,vax:60,lat:32.4,lon:53.7},{iso:"ZAF",name:"S. Africa",infec:48,pos:.05,vax:28,lat:-30.6,lon:22.9}
+];
+const CC=['#1E88E5','#F9A825','#43A047','#7B1FA2','#D85A30','#E24B4A'];
+var cty=CDATA.map(function(c){return Object.assign({},c);});
+var clR=null,pcCh=null,m2Ch=null,mSub='elbow',elC=[];
+var leafMap=null,mapMarkers=[];
+function $(id){return document.getElementById(id)}function setH(id,h){var e=$(id);if(e)e.innerHTML=h;}function setT(id,t){var e=$(id);if(e)e.textContent=t;}
+var TABS=['about','ml','map','stages','sim','heatmap','eq','glossary','api'];
+function showTab(id){document.querySelectorAll('.T').forEach(function(t){t.classList.remove('a');});document.querySelectorAll('.nb').forEach(function(b){b.classList.remove('a');});var el=$('tab-'+id);if(el)el.classList.add('a');var idx=TABS.indexOf(id);var btns=document.querySelectorAll('.nb');if(idx>=0&&btns[idx])btns[idx].classList.add('a');if(id==='stages'){renderStg();drawSeirFlow();}if(id==='sim'){updDD();doSim();}if(id==='heatmap')doHM();if(id==='map')initMap();}
+
+// ====== ML (real algorithms, verified standardization) ======
+function dist(a,b){var s=0;for(var i=0;i<a.length;i++)s+=(a[i]-b[i])*(a[i]-b[i]);return Math.sqrt(s);}
+function stdZ(d){
+  // Z-score standardization with Bessel correction (n-1), identical to R scale()
+  var c=['infec','pos','vax'];
+  var stats=c.map(function(k){var v=d.map(function(x){return x[k];});var n=v.length;var m=v.reduce(function(a,b){return a+b;},0)/n;var ss=v.reduce(function(a,b){return a+(b-m)*(b-m);},0);var sd=Math.sqrt(ss/(n-1))||1;return{m:m,sd:sd};});
+  mLog('Standardization (z-score, n-1): infec μ='+stats[0].m.toFixed(2)+' σ='+stats[0].sd.toFixed(2)+', pos μ='+stats[1].m.toFixed(5)+' σ='+stats[1].sd.toFixed(5)+', vax μ='+stats[2].m.toFixed(2)+' σ='+stats[2].sd.toFixed(2));
+  return d.map(function(x){return c.map(function(k,i){return(x[k]-stats[i].m)/stats[i].sd;});});
+}
+function kppI(d,K){var n=d.length,c=[d[Math.floor(Math.random()*n)]];for(var k=1;k<K;k++){var ds=d.map(function(p){return Math.min.apply(null,c.map(function(x){var dd=dist(p,x);return dd*dd;}));});var t=ds.reduce(function(a,b){return a+b;},0);var r=Math.random()*t,cm=0;for(var i=0;i<n;i++){cm+=ds[i];if(cm>=r){c.push(d[i].slice());break;}}}return c;}
+function kR(d,K,mi){var n=d.length,dm=d[0].length;var c=kppI(d,K),lb=new Array(n).fill(0),it=0;for(;it<mi;it++){var ch=false;for(var i=0;i<n;i++){var b=0,bd=1e99;for(var k=0;k<K;k++){var dd=dist(d[i],c[k]);if(dd<bd){bd=dd;b=k;}}if(lb[i]!==b){lb[i]=b;ch=true;}}if(!ch)break;for(var k=0;k<K;k++){var m=d.filter(function(_,i){return lb[i]===k;});if(!m.length)continue;c[k]=Array.from({length:dm},function(_,j){return m.reduce(function(s,p){return s+p[j];},0)/m.length;});}}var w=0;for(var i=0;i<n;i++){var dd=dist(d[i],c[lb[i]]);w+=dd*dd;}return{lb:lb,c:c,it:it,w:w};}
+function kB(d,K,mi,ns){var b=null;for(var r=0;r<ns;r++){var res=kR(d,K,mi);if(!b||res.w<b.w)b=res;}return b;}
+function silS(d,lb,K){var n=d.length;if(n<2||K<2)return 0;var tot=0;for(var i=0;i<n;i++){var ci=lb[i],own=[],ai,bi=1e99;for(var j=0;j<n;j++)if(j!==i&&lb[j]===ci)own.push(dist(d[i],d[j]));ai=own.length?own.reduce(function(a,b){return a+b;},0)/own.length:0;for(var k=0;k<K;k++){if(k===ci)continue;var ot=[];for(var j=0;j<n;j++)if(lb[j]===k)ot.push(dist(d[i],d[j]));if(!ot.length)continue;var avg=ot.reduce(function(a,b){return a+b;},0)/ot.length;if(avg<bi)bi=avg;}if(bi>=1e99)bi=0;var mx=Math.max(ai,bi);tot+=mx>0?(bi-ai)/mx:0;}return tot/n;}
+function pcaC(d){var n=d.length,dm=d[0].length;var mn=Array.from({length:dm},function(_,j){return d.reduce(function(s,r){return s+r[j];},0)/n;});var ct=d.map(function(r){return r.map(function(v,j){return v-mn[j];});});var cv=Array.from({length:dm},function(_,i){return Array.from({length:dm},function(_,j){return ct.reduce(function(s,r){return s+r[i]*r[j];},0)/(n-1);});});var A=cv.map(function(r){return r.slice();}),V=Array.from({length:dm},function(_,i){return Array.from({length:dm},function(_,j){return i===j?1:0;});});for(var sw=0;sw<100;sw++)for(var i=0;i<dm;i++)for(var j=i+1;j<dm;j++){if(Math.abs(A[i][j])<1e-12)continue;var th=.5*Math.atan2(2*A[i][j],A[i][i]-A[j][j]),co=Math.cos(th),si=Math.sin(th);var An=A.map(function(r){return r.slice();});for(var k=0;k<dm;k++){An[k][i]=co*A[k][i]+si*A[k][j];An[k][j]=-si*A[k][i]+co*A[k][j];}for(var k=0;k<dm;k++){A[i][k]=co*An[i][k]+si*An[j][k];A[j][k]=-si*An[i][k]+co*An[j][k];}var Vn=V.map(function(r){return r.slice();});for(var k=0;k<dm;k++){Vn[k][i]=co*V[k][i]+si*V[k][j];Vn[k][j]=-si*V[k][i]+co*V[k][j];}V=Vn;}var ep=Array.from({length:dm},function(_,i){return{v:A[i][i],vc:V.map(function(r){return r[i];})};});ep.sort(function(a,b){return b.v-a.v;});var tv=ep.reduce(function(s,e){return s+Math.max(0,e.v);},0);return{pts:ct.map(function(r){return[r.reduce(function(s,v,k){return s+v*ep[0].vc[k];},0),r.reduce(function(s,v,k){return s+v*ep[1].vc[k];},0)];}),v1:tv>0?Math.round(ep[0].v/tv*1000)/10:0,v2:tv>0?Math.round(ep[1].v/tv*1000)/10:0};}
+function mLog(m){var e=$('mlLog');if(e){e.textContent+='\n'+m;e.scrollTop=e.scrollHeight;}}
+function handleDrop(e){e.preventDefault();$('dropZone').classList.remove('dg');if(e.dataTransfer.files.length)handleFile(e.dataTransfer.files[0]);}
+function handleFile(f){if(!f)return;mLog('Loading: '+f.name);var r=new FileReader();r.onload=function(e){parseCSV(e.target.result,f.name);};r.readAsText(f);}
+function parsePasted(){var t=$('csvPaste');if(t&&t.value.trim())parseCSV(t.value.trim(),'pasted');}
+function parseCSV(text,src){var res=Papa.parse(text,{header:true,skipEmptyLines:true,dynamicTyping:true});if(!res.meta.fields){mLog('ERROR');return;}var fl=res.meta.fields,m={};fl.forEach(function(f){var l=f.toLowerCase().replace(/[^a-z0-9]/g,'');if(!m.n&&(l.indexOf('country')>=0||l.indexOf('name')>=0||l.indexOf('location')>=0))m.n=f;if(!m.i&&(l.indexOf('infec')>=0||l.indexOf('rate')>=0||l.indexOf('cases')>=0))m.i=f;if(!m.p&&(l.indexOf('posit')>=0||l.indexOf('tpr')>=0))m.p=f;if(!m.v&&(l.indexOf('vax')>=0||l.indexOf('vaccin')>=0||l.indexOf('coverage')>=0))m.v=f;if(!m.iso&&(l.indexOf('iso')>=0||l==='code'))m.iso=f;});if(!m.n||!m.i||!m.p||!m.v){mLog('Need: country,infection_rate,test_positivity,vax_coverage. Found: '+fl.join(','));return;}var add=0;res.data.forEach(function(r){var nm=String(r[m.n]||'').trim(),inf=parseFloat(r[m.i]),pos=parseFloat(r[m.p]),vax=parseFloat(r[m.v]),iso=m.iso?String(r[m.iso]||'').trim():'';if(nm&&!isNaN(inf)&&!isNaN(pos)&&!isNaN(vax)){var ex=iso?cty.findIndex(function(c){return c.iso===iso;}):cty.findIndex(function(c){return c.name.toLowerCase()===nm.toLowerCase();});if(ex>=0)Object.assign(cty[ex],{infec:inf,pos:pos,vax:vax});else cty.push({name:nm,infec:inf,pos:pos,vax:vax,iso:iso});add++;}});mLog(src+': +'+add+'. Total: '+cty.length);doKM();}
+function resetC(){cty=CDATA.map(function(c){return Object.assign({},c);});mLog('Reset. '+cty.length);doKM();}
+function doKM(){var K=+$('mlK').value,ns=+$('mlR').value;mLog('\n--- K-means (K='+K+', nstart='+ns+') ---');var mx=stdZ(cty);var best=kB(mx,K,100,ns);var sil=silS(mx,best.lb,K);mLog('Best WSS='+best.w.toFixed(2)+' ('+best.it+' iter). Silhouette='+sil.toFixed(4));var pca=pcaC(mx);mLog('PCA: PC1='+pca.v1+'%, PC2='+pca.v2+'%');elC=[];for(var kk=2;kk<=6;kk++){var r=kB(mx,kk,100,Math.min(ns,5));elC.push({k:kk,w:Math.round(r.w*100)/100,s:Math.round(silS(mx,r.lb,kk)*1000)/1000});}
+var cs=[];for(var k=0;k<K;k++){var m=cty.filter(function(_,i){return best.lb[i]===k;});cs.push({k:k,n:m.length,ai:m.length?m.reduce(function(s,c){return s+c.infec;},0)/m.length:0,ap:m.length?m.reduce(function(s,c){return s+c.pos;},0)/m.length:0,av:m.length?m.reduce(function(s,c){return s+c.vax;},0)/m.length:0,mem:m.map(function(c){return c.name;})});}cs.sort(function(a,b){return a.ai-b.ai;});var rm={};cs.forEach(function(c,i){rm[c.k]=i;});var rl=best.lb.map(function(l){return rm[l];});clR={lb:rl,K:K,cs:cs,pca:pca,sil:sil};rML(pca,rl,K,cs);}
+function rML(pca,lb,K,cs){if(pcCh)pcCh.destroy();var lg='',ds=[];for(var k=0;k<K;k++){var pts=[];for(var i=0;i<cty.length;i++)if(lb[i]===k)pts.push({x:Math.round(pca.pts[i][0]*100)/100,y:Math.round(pca.pts[i][1]*100)/100,label:cty[i].name});ds.push({label:'C'+(k+1),data:pts,backgroundColor:CC[k],pointRadius:5,pointHoverRadius:8});lg+='<span><span class="d" style="background:'+CC[k]+'"></span>C'+(k+1)+' (n='+cs[k].n+')</span>';}
+setH('pcaL',lg);pcCh=new Chart($('pcaCv'),{type:'scatter',data:{datasets:ds},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return c.raw.label;}}}},scales:{x:{title:{display:true,text:'PC1 ('+pca.v1+'%)',font:{size:11}}},y:{title:{display:true,text:'PC2 ('+pca.v2+'%)',font:{size:11}}}}}});
+setH('valM','<div class="M"><div class="l">Silhouette</div><div class="n" style="color:var(--roy)">'+clR.sil.toFixed(3)+'</div></div><div class="M"><div class="l">K</div><div class="n">'+K+'</div></div><div class="M"><div class="l">Countries</div><div class="n">'+cty.length+'</div></div><div class="M"><div class="l">WSS</div><div class="n" style="font-size:14px">'+elC.find(function(e){return e.k===K;}).w+'</div></div>');
+var ph='';cs.forEach(function(s,i){ph+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;font-size:13px;padding:8px 10px;background:var(--bg);border-radius:8px;border-left:3px solid '+CC[i]+';box-shadow:var(--sh)"><strong style="color:'+CC[i]+'">C'+(i+1)+'</strong> (n='+s.n+') α='+s.ai.toFixed(1)+'/M · pos='+s.ap.toFixed(4)+' · vax='+s.av.toFixed(1)+'%</div>';});setH('cPar',ph);rML2();}
+function rML2(){if(m2Ch)m2Ch.destroy();var cv=$('ml2Cv'),cw=$('ml2W'),mw=$('memW');if(!cv||!cw)return;cw.style.display='none';if(mw)mw.style.display='none';
+if(mSub==='mem'){if(mw){mw.style.display='block';var h='';if(clR)clR.cs.forEach(function(s,i){h+='<div style="margin-bottom:8px"><div style="font-weight:700;font-size:13px;color:'+CC[i]+'">Cluster '+(i+1)+' ('+s.n+' countries)</div><div style="max-height:90px;overflow:auto;padding:6px;background:var(--bg);border-radius:8px;margin-top:4px;line-height:2">'+s.mem.map(function(m){return'<span class="ct">'+m+'</span>';}).join(' ')+'</div></div>';});mw.innerHTML=h;}}
+else{cw.style.display='block';var K=clR?clR.K:3;if(mSub==='elbow')m2Ch=new Chart(cv,{type:'line',data:{labels:elC.map(function(d){return'K='+d.k;}),datasets:[{data:elC.map(function(d){return d.w;}),borderColor:'#1E88E5',borderWidth:2,pointRadius:6,pointBackgroundColor:elC.map(function(d){return d.k===K?'#1E88E5':'#fff';}),pointBorderColor:'#1E88E5',pointBorderWidth:2,tension:.3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{title:{display:true,text:'Within-cluster SS',font:{size:11}}}}}});
+else m2Ch=new Chart(cv,{type:'bar',data:{labels:elC.map(function(d){return'K='+d.k;}),datasets:[{data:elC.map(function(d){return d.s;}),backgroundColor:elC.map(function(d){return d.k===K?'#1E88E5':'rgba(30,136,229,.3)';}),borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{title:{display:true,text:'Silhouette width',font:{size:11}},min:0,max:1}}}});}}
+function swML(t){mSub=t;document.querySelectorAll('#mlST .stb').forEach(function(b){if(b&&b.dataset)b.classList.toggle('a',b.dataset.t===t);});rML2();}
+
+// ====== LEAFLET MAP ======
+function initMap(){
+  if(!leafMap){
+    leafMap=L.map('leafMap').setView([20,30],2);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png',{maxZoom:8,attribution:'© OpenStreetMap © CARTO'}).addTo(leafMap);
+  }
+  setTimeout(function(){leafMap.invalidateSize();updateMapMarkers();},200);
+}
+function updateMapMarkers(){
+  if(!leafMap||!clR)return;
+  mapMarkers.forEach(function(m){leafMap.removeLayer(m);});mapMarkers=[];
+  cty.forEach(function(c,i){
+    if(!c.lat||!c.lon)return;
+    var cl=clR.lb[i];
+    var marker=L.circleMarker([c.lat,c.lon],{radius:7,fillColor:CC[cl],color:'#fff',weight:1.5,fillOpacity:.85});
+    marker.bindPopup('<strong>'+c.name+'</strong>'+(c.iso?' ('+c.iso+')':'')+'<br>Cluster: <span style="color:'+CC[cl]+';font-weight:700">C'+(cl+1)+'</span><br>Infection rate: '+c.infec+'/M<br>Test positivity: '+c.pos+'<br>Vax coverage: '+c.vax+'%');
+    marker.addTo(leafMap);mapMarkers.push(marker);
+  });
+  var lg='';for(var k=0;k<clR.K;k++){var n=clR.cs[k].n;lg+='<span><span class="d" style="background:'+CC[k]+'"></span>C'+(k+1)+' (n='+n+')</span>';}
+  setH('mapLeg',lg);
+}
+
+// ====== STAGES ======
+var DSTG=[{nm:'P1',lb:'COE/Vax',dy:2,tr:true,te:false,qu:false,rm:1},{nm:'P2',lb:'Pre-test',dy:2,tr:true,te:true,qu:false,rm:1},{nm:'P3',lb:'Post-test',dy:2,tr:true,te:false,qu:false,rm:1},{nm:'P4',lb:'Travel',dy:1,tr:true,te:false,qu:false,rm:2},{nm:'A',lb:'Arrival',dy:1,tr:false,te:true,qu:false,rm:0},{nm:'Q',lb:'Quarantine',dy:0,tr:false,te:true,qu:true,rm:0}];
+var stg=JSON.parse(JSON.stringify(DSTG)),sId=10;
+function sCol(s){return s.qu?'#E24B4A':s.te?'#1E88E5':s.tr?'#F9A825':'#8896A6';}
+function renderStg(){var w=$('stgCards');if(!w)return;var h='';stg.forEach(function(s,i){var c=sCol(s);h+='<div class="sc"><button class="rb" onclick="rmStg('+i+')">✕</button><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><div style="width:24px;height:24px;border-radius:50%;background:'+c+';display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;font-weight:700">'+(i+1)+'</div><strong>'+s.nm+'</strong><span style="font-size:11px;color:var(--tx2)">'+s.lb+'</span></div><div class="sp"><label>Days <input type="number" value="'+s.dy+'" min="0" max="30" style="width:50px" onchange="stg['+i+'].dy=+this.value;rStgP();drawSeirFlow()"></label><label>Rate× <input type="number" value="'+s.rm+'" min="0" max="5" step=".5" style="width:50px" onchange="stg['+i+'].rm=+this.value;rStgP()"></label><label class="cb2"><input type="checkbox" '+(s.tr?'checked':'')+' onchange="stg['+i+'].tr=this.checked">Tr</label><label class="cb2"><input type="checkbox" '+(s.te?'checked':'')+' onchange="stg['+i+'].te=this.checked">Te</label><label class="cb2"><input type="checkbox" '+(s.qu?'checked':'')+' onchange="stg['+i+'].qu=this.checked;drawSeirFlow()">Q</label></div></div>';});w.innerHTML=h;rStgP();drawSeirFlow();}
+function addStg(){sId++;stg.push({nm:'S'+sId,lb:'Custom',dy:1,tr:true,te:false,qu:false,rm:1});renderStg();}
+function rmStg(i){if(stg.length<=1)return;stg.splice(i,1);renderStg();}
+function rstStg(){stg=JSON.parse(JSON.stringify(DSTG));renderStg();}
+function rStgP(){var fb=$('stgFlow');if(fb)fb.innerHTML=stg.map(function(s){var c=sCol(s);return'<div class="fs" style="background:'+c+'15;border-left:3px solid '+c+'"><div class="sn" style="color:'+c+'">'+s.nm+'</div><div class="sd">'+s.dy+'d</div></div>';}).join('');
+var th='<table class="dt"><thead><tr><th>#</th><th>Stage</th><th>Days</th><th>Tr</th><th>Te</th><th>Q</th><th>Rate×</th></tr></thead><tbody>';stg.forEach(function(s,i){th+='<tr><td>'+(i+1)+'</td><td><strong>'+s.nm+'</strong></td><td>'+s.dy+'</td><td>'+(s.tr?'✓':'—')+'</td><td>'+(s.te?'✓':'—')+'</td><td>'+(s.qu?'✓':'—')+'</td><td>×'+s.rm+'</td></tr>';});th+='</tbody></table>';setH('stgSum',th);}
+
+// ====== SEIR FLOW DIAGRAM (SVG, matching Figure 1) ======
+function drawSeirFlow(){
+  var el=$('seirFlow');if(!el)return;
+  var n=stg.length;var rh=48,gap=14,cw=56,pad=20,arw=28;
+  var totalW=pad+cw*4+arw*3+pad+120;var svgH=pad+n*(rh+gap)+70;
+  var comps=['S','E','I','R'];var cC=['#1E88E5','#F9A825','#E24B4A','#43A047'];
+  // SVG icon paths
+  var icons={
+    vax:'M12 2L9 9h6L12 2zM11 10v8M8 14h6', // syringe
+    test:'M7 3v10l5 5 5-5V3', // test tube
+    plane:'M21 16l-9-2-3-6-3 6-5 1 5 3v4l3-2 3 2v-4z', // airplane
+    arrival:'M12 2C8 2 5 5 5 9c0 5 7 13 7 13s7-8 7-13c0-4-3-7-7-7zm0 9.5c-1.4 0-2.5-1.1-2.5-2.5S10.6 6.5 12 6.5s2.5 1.1 2.5 2.5S13.4 11.5 12 11.5z', // pin
+    quar:'M18 8h-1V6c0-2.8-2.2-5-5-5S7 3.2 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zM9 8V6c0-1.7 1.3-3 3-3s3 1.3 3 3v2H9z' // lock
+  };
+  var stgIcons={'P1':'vax','P2':'test','P3':'test','P4':'plane','A':'arrival','Q':'quar'};
+  // Geographic labels
+  var geoLabels={};
+  stg.forEach(function(s,i){
+    if(s.nm==='P1'||s.nm==='P2'||s.nm==='P3') geoLabels[i]='Departure country';
+    else if(s.nm==='P4') geoLabels[i]='In-flight';
+    else if(s.nm==='A') geoLabels[i]='Thailand';
+    else if(s.nm==='Q') geoLabels[i]='Thailand (facility)';
+  });
+  var svg='<svg width="100%" viewBox="0 0 '+totalW+' '+svgH+'" xmlns="http://www.w3.org/2000/svg" style="max-width:'+totalW+'px;font-family:Inter,sans-serif">';
+  // Arrow markers - FILLED triangles (no context-stroke)
+  svg+='<defs>';
+  svg+='<marker id="aSE" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><polygon points="1,1 9,5 1,9" fill="#1E88E5"/></marker>';
+  svg+='<marker id="aEI" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><polygon points="1,1 9,5 1,9" fill="#F9A825"/></marker>';
+  svg+='<marker id="aIR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><polygon points="1,1 9,5 1,9" fill="#E24B4A"/></marker>';
+  svg+='<marker id="aGr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><polygon points="1,1 9,5 1,9" fill="#8896A6"/></marker>';
+  svg+='<marker id="aRd" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><polygon points="1,1 9,5 1,9" fill="#E24B4A"/></marker>';
+  svg+='</defs>';
+  var arrowIds=['aSE','aEI','aIR','aGr'];
+  var x0=pad,y0=pad;
+  // Geographic context annotation (P4 airplane)
+  var p4idx=-1;stg.forEach(function(s,i){if(s.nm==='P4')p4idx=i;});
+  stg.forEach(function(s,i){
+    var y=y0+i*(rh+gap);var c=sCol(s);
+    var ik=stgIcons[s.nm]||'';
+    // --- STAGE LABEL PILL on right with icon ---
+    var lx=x0+cw*4+arw*3+8;
+    svg+='<rect x="'+lx+'" y="'+(y+2)+'" width="108" height="'+(rh-4)+'" rx="'+(rh/2-2)+'" fill="'+c+'" fill-opacity=".12" stroke="'+c+'" stroke-width="1.2"/>';
+    // Icon
+    if(ik&&icons[ik]){
+      svg+='<g transform="translate('+(lx+8)+','+(y+rh/2-10)+') scale(0.83)"><path d="'+icons[ik]+'" fill="none" stroke="'+c+'" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></g>';
+    }
+    // Stage name
+    svg+='<text x="'+(lx+32)+'" y="'+(y+rh/2-4)+'" font-size="13" font-weight="700" fill="'+c+'" dominant-baseline="central">'+s.nm+'</text>';
+    // Stage description
+    svg+='<text x="'+(lx+32)+'" y="'+(y+rh/2+10)+'" font-size="9" fill="'+c+'" fill-opacity=".7" dominant-baseline="central">'+s.lb+'</text>';
+    // Geographic tag (small text above row)
+    if(geoLabels[i]!==undefined && (i===0||geoLabels[i]!==geoLabels[i-1])){
+      svg+='<text x="'+x0+'" y="'+(y-3)+'" font-size="9" fill="var(--tx3)" font-style="italic">'+geoLabels[i]+'</text>';
+    }
+    // P4 airplane decoration
+    if(s.nm==='P4'){
+      var ay2=y+rh/2;
+      svg+='<text x="'+(x0+cw*4+arw*3-10)+'" y="'+(ay2-16)+'" font-size="20">✈</text>';
+      svg+='<line x1="'+(x0-5)+'" y1="'+ay2+'" x2="'+(x0+cw*4+arw*3)+'" y2="'+ay2+'" stroke="'+c+'" stroke-width="0.5" stroke-dasharray="6 4" opacity=".3"/>';
+    }
+    // --- SEIR COMPARTMENT BOXES ---
+    comps.forEach(function(comp,ci){
+      var bx=x0+ci*(cw+arw);
+      svg+='<rect x="'+bx+'" y="'+y+'" width="'+cw+'" height="'+rh+'" rx="8" fill="'+cC[ci]+'" fill-opacity=".10" stroke="'+cC[ci]+'" stroke-width="1.2"/>';
+      svg+='<text x="'+(bx+cw/2)+'" y="'+(y+rh/2)+'" text-anchor="middle" font-size="16" font-weight="700" fill="'+cC[ci]+'" dominant-baseline="central">'+comp+'</text>';
+      // --- HORIZONTAL ARROWS between compartments (S→E, E→I, I→R) ---
+      if(ci<3){
+        var ax1=bx+cw+2;
+        var ax2=bx+cw+arw-3;
+        var ay=y+rh/2;
+        // Transition label
+        var labels=["α·σ","β","γ"];
+        svg+='<line x1="'+ax1+'" y1="'+ay+'" x2="'+ax2+'" y2="'+ay+'" stroke="'+cC[ci]+'" stroke-width="2" marker-end="url(#'+arrowIds[ci]+')"/>';
+        svg+='<text x="'+((ax1+ax2)/2)+'" y="'+(ay-6)+'" text-anchor="middle" font-size="8" fill="'+cC[ci]+'" font-style="italic">'+labels[ci]+'</text>';
+      }
+    });
+    // --- VERTICAL DASHED ARROWS (day transitions from row above) ---
+    if(i>0){
+      comps.forEach(function(_,ci){
+        var bx=x0+ci*(cw+arw)+cw/2;
+        var yp=y0+(i-1)*(rh+gap)+rh+2;
+        svg+='<line x1="'+bx+'" y1="'+yp+'" x2="'+bx+'" y2="'+(y-2)+'" stroke="#8896A6" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#aGr)"/>';
+      });
+    }
+    // --- EXCLUSION ARROWS (testing/severe → dashed red going out) ---
+    if(s.te||s.qu){
+      // From E compartment
+      var ex1=x0+1*(cw+arw)+cw/2;
+      var ey1=y+rh+2;
+      svg+='<line x1="'+ex1+'" y1="'+(y+rh-4)+'" x2="'+(ex1+12)+'" y2="'+(y+rh+10)+'" stroke="#E24B4A" stroke-width="1" stroke-dasharray="3 2" marker-end="url(#aRd)"/>';
+      // From I compartment
+      var ix1=x0+2*(cw+arw)+cw/2;
+      svg+='<line x1="'+ix1+'" y1="'+(y+rh-4)+'" x2="'+(ix1+12)+'" y2="'+(y+rh+10)+'" stroke="#E24B4A" stroke-width="1" stroke-dasharray="3 2" marker-end="url(#aRd)"/>';
+    }
+  });
+  // --- MISSED CASES BOX at bottom ---
+  var my=y0+n*(rh+gap);
+  svg+='<rect x="'+x0+'" y="'+my+'" width="'+(cw*4+arw*3)+'" height="44" rx="10" fill="#E24B4A" fill-opacity=".08" stroke="#E24B4A" stroke-width="1.5"/>';
+  svg+='<text x="'+(x0+(cw*4+arw*3)/2)+'" y="'+(my+24)+'" text-anchor="middle" font-size="14" font-weight="700" fill="#E24B4A" dominant-baseline="central">Missed Cases (E + I)</text>';
+  // Legend
+  var ly=my+54;
+  svg+='<text x="'+x0+'" y="'+ly+'" font-size="9" fill="var(--tx3)">──── Compartment transition &nbsp;&nbsp; ╌╌╌ Day transition &nbsp;&nbsp; ╌╌ Excluded by testing/symptoms</text>';
+  svg+='</svg>';
+  el.innerHTML=svg;
+}
+
+// ====== SIMULATOR (same engine) ======
+var sCh=null,sTab='seir';
+function updDD(){var s=$('sC');if(!s)return;s.innerHTML='';if(clR){var aI=cty.reduce(function(s,c){return s+c.infec;},0)/cty.length;s.innerHTML+='<option value="universal">Universal (α='+aI.toFixed(0)+')</option>';clR.cs.forEach(function(c,i){s.innerHTML+='<option value="c'+i+'">C'+(i+1)+' (n='+c.n+', α='+c.ai.toFixed(0)+')</option>';});}else s.innerHTML='<option value="universal">Universal</option>';}
+function gCP(k){if(!clR)return{a:.000197,w:.4283};if(k==='universal'){return{a:cty.reduce(function(s,c){return s+c.infec;},0)/cty.length/1e6,w:cty.reduce(function(s,c){return s+c.vax;},0)/cty.length/100};}var i=+(k.replace('c',''));var c=clR.cs[i];return c?{a:c.ai/1e6,w:c.av/100}:{a:.000197,w:.4283};}
+function seir(p){var aS=p.a*p.sg;var init=aS*p.N;var S=p.N-init,E=init/2,I=init/2,R=0,det=0;var h=[];var day=0;function step(nm,rm,doT,isQ){var ni=isQ?0:aS*rm*S,eI=p.bt*E,iR=p.gm*I,sv=p.pi*(1-p.rho)*I;var tE=0,tI=0;if(doT){tE=(1-p.mu)*E;tI=(1-p.tau)*I;}S-=ni;E=Math.max(0,E+ni-eI-tE);I=Math.max(0,I+eI-iR-sv-tI);R+=iR;day++;det+=tE+tI+sv;h.push({day:day,S:S,E:E,I:I,R:R,MC:E+I,s:nm});}
+for(var si=0;si<stg.length;si++){var st=stg[si];if(st.qu){for(var d=1;d<=p.qd;d++)step(st.nm+' d'+d,0,d===p.qd,true);}else{var td=-1;if(st.te)td=1;if(st.nm==='A'&&p.et)td=1;for(var d=1;d<=st.dy;d++)step(st.nm+' d'+d,st.rm,d===td,false);}}var qi=-1;for(var i=0;i<h.length;i++)if(h[i].s.indexOf('Q')===0){qi=i;break;}return{h:h,det:det,pq:qi>0?h[qi-1].MC:(h.length?h[h.length-1].MC:0)};}
+function doSim(){var ck=$('sC');if(!ck)return;ck=ck.value;var cp=gCP(ck),vr=$('sV').value==='1',om=vr?1:cp.w,th=+$('sTh').value,de=+$('sDe').value;
+var p={N:+$('sN').value,a:cp.a,sg:1-th*om,rho:1-de*om,bt:1/+$('sLP').value,gm:1/+$('sIP').value,pi:+$('sPi').value,mu:+$('sMu').value,tau:+$('sTau').value,qd:+$('sQ').value,et:$('sE').value==='1'};
+setT('vN',Math.round(p.N/1000)+'k');setT('vLP',$('sLP').value);setT('vIP',$('sIP').value);setT('vPi',Math.round(p.pi*100)+'%');setT('vMu',(+$('sMu').value).toFixed(2));setT('vTau',(+$('sTau').value).toFixed(2));setT('vTh',th.toFixed(2));setT('vDe',de.toFixed(2));
+var r=seir(p),bp=Object.assign({},p,{et:false,qd:0,sg:1-th*cp.w,rho:1-de*cp.w}),br=seir(bp);var mc=r.h.length?r.h[r.h.length-1].MC:0,bmc=br.h.length?br.h[br.h.length-1].MC:0,red=bmc>0?Math.round((bmc-mc)/bmc*100):0;
+setH('simM','<div class="M"><div class="l">Missed cases</div><div class="n" style="color:#E24B4A">'+Math.round(mc).toLocaleString()+'</div></div><div class="M"><div class="l">Reduction</div><div class="n" style="color:#43A047">'+red+'%</div></div><div class="M"><div class="l">Detected</div><div class="n" style="color:var(--roy)">'+Math.round(r.det).toLocaleString()+'</div></div><div class="M"><div class="l">Pre-Q</div><div class="n" style="color:var(--gld)">'+Math.round(r.pq).toLocaleString()+'</div></div>');
+var fb=$('simFB');if(fb){var sd={};r.h.forEach(function(x){var b=x.s.replace(/ d[0-9]+$/,'');if(!sd[b])sd[b]=0;sd[b]++;});fb.innerHTML=Object.entries(sd).map(function(e){var nm=e[0],d=e[1];var st2=stg.find(function(s){return nm.indexOf(s.nm)===0;});var c=st2?sCol(st2):'#888';return'<div class="fs" style="background:'+c+'15;border-left:3px solid '+c+'"><div class="sn" style="color:'+c+'">'+nm+'</div><div class="sd">'+d+'d</div></div>';}).join('');}
+var qs=[0,1,3,5,7,10,14],mx2=mc;var qd=qs.map(function(q){var rr=seir(Object.assign({},p,{qd:q}));var v=rr.h.length?rr.h[rr.h.length-1].MC:0;if(v>mx2)mx2=v;return{q:q,mc:v};});setH('qBr',qd.map(function(d){var pct=mx2>0?d.mc/mx2*100:0;var sel=d.q===p.qd;return'<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;font-size:11px"><span style="min-width:36px;text-align:right;color:var(--tx2);font-weight:500">'+(d.q===0?'None':d.q+'d')+'</span><div style="flex:1;height:14px;background:var(--bg);border-radius:7px;overflow:hidden"><div style="width:'+Math.round(pct)+'%;height:100%;border-radius:7px;background:'+(sel?'#E24B4A':'rgba(226,75,74,.25)')+';transition:width .3s"></div></div><span style="min-width:50px;font-family:var(--mono);font-size:10px;font-weight:600">'+Math.round(d.mc).toLocaleString()+'</span></div>';}).join(''));
+rSCh(r,br,p);}
+function rSCh(r,br,p){if(sCh)sCh.destroy();var ctx=$('simCv');if(!ctx)return;var h=r.h;
+if(sTab==='seir'){setH('simL','<span><span class="d" style="background:#1E88E5"></span>S/1k</span><span><span class="d" style="background:#F9A825"></span>E</span><span><span class="d" style="background:#E24B4A"></span>I</span><span><span class="d" style="background:#43A047"></span>R</span><span><span class="d" style="background:#7B1FA2"></span>MC</span>');sCh=new Chart(ctx,{type:'line',data:{labels:h.map(function(d){return d.s;}),datasets:[{data:h.map(function(d){return Math.round(d.S/1000*10)/10;}),borderColor:'#1E88E5',borderWidth:1.5,pointRadius:1.5,tension:.3,yAxisID:'y1'},{data:h.map(function(d){return Math.round(d.E*10)/10;}),borderColor:'#F9A825',borderWidth:2,pointRadius:2,tension:.3},{data:h.map(function(d){return Math.round(d.I*10)/10;}),borderColor:'#E24B4A',borderWidth:2,pointRadius:2,tension:.3},{data:h.map(function(d){return Math.round(d.R*10)/10;}),borderColor:'#43A047',borderWidth:1.5,pointRadius:1.5,tension:.3},{data:h.map(function(d){return Math.round(d.MC*10)/10;}),borderColor:'#7B1FA2',borderWidth:2,borderDash:[5,3],pointRadius:0,tension:.3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:9},maxRotation:60}},y:{},y1:{position:'right',grid:{display:false}}},interaction:{mode:'index',intersect:false}}});}
+else if(sTab==='mc'){setH('simL','<span><span class="d" style="background:#E24B4A"></span>Scenario</span><span><span class="d" style="background:#888"></span>Baseline</span>');sCh=new Chart(ctx,{type:'line',data:{labels:h.map(function(d){return d.s;}),datasets:[{data:h.map(function(d){return Math.round(d.MC*10)/10;}),borderColor:'#E24B4A',borderWidth:2.5,pointRadius:2.5,tension:.3,fill:{target:'origin',above:'rgba(226,75,74,.06)'}},{data:br.h.map(function(d){return Math.round(d.MC*10)/10;}),borderColor:'#888',borderWidth:1.5,borderDash:[4,3],pointRadius:0,tension:.3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:9},maxRotation:60}},y:{}},interaction:{mode:'index',intersect:false}}});}
+else{var qs2=[0,1,3,5,7,10,14],ks=['universal'],kn=['Univ'];if(clR)clR.cs.forEach(function(_,i){ks.push('c'+i);kn.push('C'+(i+1));});setH('simL',ks.map(function(k,i){return'<span><span class="d" style="background:'+CC[i]+'"></span>'+kn[i]+'</span>';}).join(''));var ds2=ks.map(function(ck,ci){var cp2=gCP(ck);return{label:kn[ci],data:qs2.map(function(q){var sp=Object.assign({},p,{a:cp2.a,sg:1-parseFloat($('sTh').value)*cp2.w,rho:1-parseFloat($('sDe').value)*cp2.w,qd:q});var rr=seir(sp);return Math.round(rr.h.length?rr.h[rr.h.length-1].MC:0);}),borderColor:CC[ci],borderWidth:2,pointRadius:4,tension:.3};});sCh=new Chart(ctx,{type:'line',data:{labels:qs2.map(function(q){return q===0?'None':q+'d';}),datasets:ds2},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{title:{display:true,text:'Quarantine',font:{size:11}},grid:{display:false}},y:{title:{display:true,text:'Missed cases',font:{size:11}}}},interaction:{mode:'index',intersect:false}}});}}
+function swSim(t){sTab=t;document.querySelectorAll('#simST .stb').forEach(function(b){if(b&&b.dataset)b.classList.toggle('a',b.dataset.t===t);});doSim();}
+
+// ====== HEATMAP ======
+var S7R="No Testing|Not required|No|863|560|2872|238,No Testing|Not required|1|473|306|1576|131,No Testing|Not required|3|359|226|1197|102,No Testing|Not required|5|245|148|819|73,No Testing|Not required|7|170|98|573|54,No Testing|Not required|10|102|54|347|36,No Testing|Not required|14|55|25|187|22,No Testing|Required|No|657|474|2167|163,No Testing|Required|1|358|258|1182|89,No Testing|Required|3|256|184|843|64,No Testing|Required|5|158|114|521|39,No Testing|Required|7|98|71|323|24,No Testing|Required|10|48|35|159|12,No Testing|Required|14|19|14|62|5,72 hours|Not required|No|822|536|2734|226,72 hours|Not required|1|462|300|1538|128,72 hours|Not required|3|351|222|1170|100,72 hours|Not required|5|239|145|799|71,72 hours|Not required|7|166|96|558|52,72 hours|Not required|10|100|53|338|35,72 hours|Not required|14|53|25|182|21,72 hours|Required|No|633|456|2088|157,72 hours|Required|1|352|254|1162|88,72 hours|Required|3|252|181|830|63,72 hours|Required|5|155|112|513|39,72 hours|Required|7|96|70|318|24,72 hours|Required|10|47|34|156|12,72 hours|Required|14|19|13|61|5,48 hours|Not required|No|806|526|2680|221,48 hours|Not required|1|455|296|1513|126,48 hours|Not required|3|346|219|1153|98,48 hours|Not required|5|235|143|788|70,48 hours|Not required|7|164|95|550|51,48 hours|Not required|10|98|52|333|34,48 hours|Not required|14|52|24|179|21,48 hours|Required|No|621|447|2048|154,48 hours|Required|1|347|250|1145|86,48 hours|Required|3|249|179|820|62,48 hours|Required|5|153|111|506|38,48 hours|Required|7|95|69|314|24,48 hours|Required|10|47|34|154|12,48 hours|Required|14|18|13|61|5,24 hours|Not required|No|779|509|2590|213,24 hours|Not required|1|444|289|1478|122,24 hours|Not required|3|339|215|1128|96,24 hours|Not required|5|230|140|770|68,24 hours|Not required|7|160|93|537|50,24 hours|Not required|10|96|51|325|33,24 hours|Not required|14|51|24|175|20,24 hours|Required|No|602|434|1985|150,24 hours|Required|1|340|245|1121|85,24 hours|Required|3|244|176|805|61,24 hours|Required|5|151|109|497|38,24 hours|Required|7|93|67|308|23,24 hours|Required|10|46|33|151|11,24 hours|Required|14|18|13|59|4,0 hours|Not required|No|742|485|2465|203,0 hours|Not required|1|430|280|1430|118,0 hours|Not required|3|329|209|1095|93,0 hours|Not required|5|223|136|747|66,0 hours|Not required|7|155|90|520|48,0 hours|Not required|10|93|49|314|32,0 hours|Not required|14|49|23|169|19,0 hours|Required|No|575|415|1898|143,0 hours|Required|1|330|238|1090|82,0 hours|Required|3|238|172|785|59,0 hours|Required|5|147|106|485|37,0 hours|Required|7|91|66|301|23,0 hours|Required|10|45|32|148|11,0 hours|Required|14|18|13|58|4,Entry|Not required|No|615|402|2044|168,Entry|Not required|1|405|266|1347|111,Entry|Not required|3|300|191|998|84,Entry|Not required|5|203|125|678|60,Entry|Not required|7|140|82|471|43,Entry|Not required|10|84|45|283|28,Entry|Not required|14|44|21|152|17,Entry|Required|No|476|343|1572|119,Entry|Required|1|316|228|1042|79,Entry|Required|3|220|158|725|55,Entry|Required|5|136|98|447|34,Entry|Required|7|84|61|277|21,Entry|Required|10|41|30|136|10,Entry|Required|14|16|12|53|4";
+var S9R="0|0|0|0,45|45|45|45,58|60|58|57,72|74|71|69,80|83|80|77,88|90|88|85,94|95|93|91,24|15|25|31,58|54|59|63,70|67|71|73,82|80|82|84,89|87|89|90,94|94|94|95,98|98|98|98,5|4|5|5,46|46|46|46,59|60|59|58,72|74|72|70,81|83|81|78,88|91|88|86,94|96|94|91,27|19|27|34,59|55|60|63,71|68|71|74,82|80|82|84,89|88|89|90,95|94|95|95,98|98|98|98,7|6|7|7,47|47|47|47,60|61|60|59,73|74|73|71,81|83|81|78,89|91|88|86,94|96|94|91,28|20|29|35,60|55|60|64,71|68|71|74,82|80|82|84,89|88|89|90,95|94|95|95,98|98|98|98,10|9|10|10,49|48|49|49,61|62|61|60,73|75|73|71,81|83|81|79,89|91|89|86,94|96|94|92,30|23|31|37,61|56|61|65,72|69|72|75,83|81|83|84,89|88|89|90,95|94|95|95,98|98|98|98,14|13|14|15,50|50|50|50,62|63|62|61,74|76|74|72,82|84|82|80,89|91|89|87,94|96|94|92,33|26|34|40,62|57|62|66,72|69|73|75,83|81|83|85,89|88|90|90,95|94|95|95,98|98|98|98,29|28|29|29,53|53|53|54,65|66|65|65,76|78|76|75,84|85|84|82,90|92|90|88,95|96|95|93,45|39|45|50,63|59|64|67,75|72|75|77,84|83|84|86,90|89|90|91,95|95|95|96,98|98|98|98";
+var S7=S7R.split(',').map(function(l){var p=l.split('|');return{t:p[0],v:p[1],q:p[2],u:+p[3],c1:+p[4],c2:+p[5],c3:+p[6]};});
+var S9=S9R.split(',').map(function(l){var p=l.split('|');return{u:+p[0],c1:+p[1],c2:+p[2],c3:+p[3]};});
+function doHM(){var tKeys=['No Testing','72 hours','48 hours','24 hours','0 hours','Entry'],tL=['No','72-h','48-h','24-h','0-h','ET'];var quars=['No','1','3','5','7','10','14'],qL=['No','1 day','3 days','5 days','7 days','10 days','14 days'];var clu=['u','c1','c2','c3'],cL=['Un','C1','C2','C3'];
+function gR(t,v,q,c){var row=S7.find(function(r){return r.t===t&&r.v===v&&r.q===q;});var ri=S7.indexOf(row);return ri>=0?S9[ri][c]:0;}
+function rc(v){if(v>=90)return'#002D72';if(v>=75)return'#1565C0';if(v>=60)return'#1E88E5';if(v>=45)return'#64B5F6';if(v>=30)return'#FFB74D';if(v>=15)return'#FFE082';return'#FFF8E1';}
+function tc(v){return v>=60?'#fff':v>=30?'#002D72':'#5D4037';}
+var h='<table class="dt" style="font-size:10px"><thead><tr><th rowspan="2"></th><th rowspan="2"></th><th colspan="6" style="text-align:center;background:var(--sap)">NOT Required</th><th colspan="6" style="text-align:center;background:#1565C0">Required</th></tr><tr>';
+for(var v=0;v<2;v++)tL.forEach(function(t){h+='<th style="text-align:center;font-size:9px;padding:3px">'+t+'</th>';});
+h+='</tr></thead><tbody>';
+quars.forEach(function(q,qi){clu.forEach(function(cl,ci){h+='<tr>';if(ci===0)h+='<td rowspan="4" style="font-weight:700;font-size:10px;text-align:center;background:var(--bg3);writing-mode:vertical-rl;padding:2px 4px">'+qL[qi]+'</td>';h+='<td style="font-weight:700;font-size:10px;color:'+CC[ci]+'">'+cL[ci]+'</td>';['Not required','Required'].forEach(function(v){tKeys.forEach(function(t){var val=gR(t,v,q,cl);var isB=t==='No Testing'&&v==='Not required'&&q==='No';h+='<td style="text-align:center;background:'+rc(val)+';color:'+tc(val)+';font-size:9px;font-weight:'+(isB?'700':'500')+';padding:3px">'+(isB?'*':val+'%')+'</td>';});});h+='</tr>';});});
+h+='</tbody></table>';setH('hmFig3',h);
+var ranked=S7.map(function(r,i){return Object.assign({},r,{red:S9[i]});});var sorted=ranked.slice().sort(function(a,b){return b.red.u-a.red.u;});
+var medals=['#1E88E5','#43A047','#F9A825','#7B1FA2','#8896A6'];
+function rT5(items,el){if(!el)return;var h2='';items.slice(0,5).forEach(function(r,i){h2+='<div class="rk"><span class="badge" style="background:'+medals[i]+'">'+(i+1)+'</span><span style="flex:1">'+r.t+' | '+r.v+' | Q='+(r.q==='No'?'—':r.q+'d')+'</span><strong style="color:var(--sap)">'+r.red.u+'%</strong></div>';});el.innerHTML=h2;}
+rT5(sorted,$('t5B'));rT5(sorted.slice(-5).reverse(),$('t5W'));}
+
+// ====== GLOSSARY ======
+function swGl(t){['par','stg','con'].forEach(function(x){var e=$('gl-'+x);if(e)e.style.display=x===t?'block':'none';});document.querySelectorAll('#tab-glossary .stb').forEach(function(b){if(b&&b.dataset)b.classList.toggle('a',b.dataset.t===t);});}
+
+// ====== API ======
+function fetchOWID(){var btn=$('apiFetchBtn'),lg=$('apiLog');if(btn)btn.textContent='Fetching...';if(lg)lg.textContent+='\nFetching OWID...';
+fetch('https://raw.githubusercontent.com/owid/covid-19-data/master/public/data/latest/owid-covid-latest.csv').then(function(r){return r.text();}).then(function(text){
+var res=Papa.parse(text,{header:true,skipEmptyLines:true,dynamicTyping:true});var rows=res.data.filter(function(r){return r.iso_code&&r.iso_code.length===3&&r.iso_code.indexOf('OWID')<0;});
+if(lg)lg.textContent+='\nParsed '+rows.length+' countries.';var added=0;
+rows.forEach(function(r){var infec=r.new_cases_per_million||0,pos=r.positive_rate||0,vax=r.people_fully_vaccinated_per_hundred||0;
+if(infec>0||vax>0){
+  // Match by ISO code first (most reliable)
+  var ex=cty.findIndex(function(c){return c.iso===r.iso_code;});
+  if(ex>=0){cty[ex].infec=Math.round(infec*100)/100;cty[ex].pos=Math.round(pos*10000)/10000;cty[ex].vax=Math.round(vax*100)/100;added++;}
+  else{cty.push({name:r.location,infec:Math.round(infec*100)/100,pos:Math.round(pos*10000)/10000,vax:Math.round(vax*100)/100,iso:r.iso_code,lat:0,lon:0});added++;}
+}});
+if(lg)lg.textContent+='\nUpdated '+added+'. Total: '+cty.length+'. Data standardized via z-score before clustering.';
+if(btn)btn.textContent='Done ✓';
+var th='<table class="dt"><thead><tr><th>Country</th><th>ISO</th><th>Infec/M</th><th>Pos</th><th>Vax%</th></tr></thead><tbody>';
+cty.slice(0,30).forEach(function(c){th+='<tr><td>'+c.name+'</td><td>'+(c.iso||'')+'</td><td>'+c.infec+'</td><td>'+c.pos+'</td><td>'+c.vax+'</td></tr>';});th+='</tbody></table>';setH('apiTable',th);
+setH('apiStatus','<div class="M" style="text-align:left;padding:10px"><div class="n" style="font-size:13px;color:var(--roy)">✓ '+added+' updated. Go to ML Clustering to re-cluster.</div></div>');
+doKM();}).catch(function(e){if(lg)lg.textContent+='\nError: '+e.message;if(btn)btn.textContent='Retry';
+setH('apiStatus','<div class="M" style="text-align:left;padding:10px"><div style="font-size:12px;color:#E24B4A">OWID fetch failed (CORS). Download CSV manually → upload in ML tab.</div></div>');});}
+
+document.addEventListener('DOMContentLoaded',function(){updDD();doKM();renderStg();});
+</script></body></html>
